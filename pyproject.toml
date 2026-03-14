@@ -1,0 +1,22 @@
+[project]
+name = "prompt-battle"
+version = "0.1.0"
+description = "Prompt Battle – match target images with AI-generated ones"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "websockets>=12.0",
+    "diffusers>=0.31",
+    "transformers>=4.45",
+    "torch>=2.4",
+    "accelerate>=0.34",
+    "safetensors",
+    "sentencepiece",
+    "Pillow>=10.0",
+    "pydantic-settings>=2.0",
+    "huggingface_hub[cli]>=0.25",
+]
+
+[project.scripts]
+prompt-battle = "backend.main:app"
