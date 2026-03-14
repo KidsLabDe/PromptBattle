@@ -12,7 +12,8 @@ frontend/build/
 
 # Environment
 .env
-.env.*
+.env.local
+.env.production
 
 # IDE
 .idea/
@@ -25,3 +26,6 @@ Thumbs.db
 
 # uv
 uv.lock
+
+# Game history (generated images + metadata)
+generated_history/

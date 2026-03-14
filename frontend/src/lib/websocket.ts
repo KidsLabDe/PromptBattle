@@ -11,6 +11,16 @@ export class GameWebSocket {
 	connect(gameId: string): void {
 		const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
 		const url = `${protocol}//${location.host}/ws/${gameId}`;
+		this._open(url);
+	}
+
+	connectPlayer(gameId: string, token: string): void {
+		const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+		const url = `${protocol}//${location.host}/ws/${gameId}/player/${token}`;
+		this._open(url);
+	}
+
+	private _open(url: string): void {
 		this.ws = new WebSocket(url);
 
 		this.ws.onmessage = (event) => {
