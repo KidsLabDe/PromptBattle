@@ -10,14 +10,21 @@ class Settings(BaseSettings):
     history_dir: Path = Path(__file__).resolve().parent.parent / "generated_history"
     static_dir: Path = Path(__file__).resolve().parent.parent / "frontend" / "build"
 
+    # Image generation backend: "local" (diffusers) or "gemini" (Google API)
+    image_backend: str = "local"
+
+    # Local model settings (used when image_backend=local)
     flux_model: str = "black-forest-labs/FLUX.1-schnell"
     flux_steps: int = 4
     flux_guidance_scale: float = 0.0
     flux_width: int = 1024
     flux_height: int = 1024
 
+    # Gemini API settings (used when image_backend=gemini)
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash-image-preview"
+
     # Prompt-Prefix: wird vor jeden Spieler-Prompt gesetzt.
-    # Hilft bei deutschen Prompts, indem das Modell die Sprache besser versteht.
     prompt_prefix: str = ""
 
     clip_model: str = "openai/clip-vit-large-patch14"
