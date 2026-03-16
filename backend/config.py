@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     # Prompt-Prefix: wird vor jeden Spieler-Prompt gesetzt.
     prompt_prefix: str = ""
 
+    # Similarity backend: "clip" (local CLIP model) or "gemini" (Google API)
+    similarity_backend: str = "clip"
+    # Gemini model for similarity scoring (when similarity_backend=gemini)
+    similarity_gemini_model: str = "gemini-2.5-flash"
+
     clip_model: str = "openai/clip-vit-large-patch14"
     clip_raw_min: float = 0.4
     clip_raw_max: float = 0.9
@@ -39,6 +44,11 @@ class Settings(BaseSettings):
     # Multiplayer auto-flow settings
     multi_result_display_seconds: int = 10
     multi_restart_delay_seconds: int = 5
+
+    # Frontend animation timings (seconds)
+    compare_bar_seconds: float = 3.0      # "Bilder werden verglichen" bar duration
+    score_reveal_seconds: float = 2.5     # Score bars animation duration
+    result_display_seconds: float = 8.0   # How long the winner overlay shows
 
     model_config = {"env_prefix": "PB_", "env_file": ".env", "env_file_encoding": "utf-8"}
 

@@ -1,8 +1,9 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.config import settings
@@ -34,4 +35,16 @@ app.include_router(ws.router)
 # Serve frontend static files if build exists
 static_dir = settings.static_dir
 if static_dir.exists():
-    app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="frontend")
+    app.mount("/_app", StaticFiles(directory=str(static_dir / "_app")), name="frontend-assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(request: Request, full_path: str):
+        """SPA fallback: serve index.html for all non-API/non-WS routes."""
+        file_path = static_dir / full_path
+        no_cache = {"Cache-Control": "no-cache, no-store, must-revalidate"}
+        if file_path.is_file():
+            # Immutable assets (hashed filenames) can be cached forever
+            if "/_app/immutable/" in str(file_path):
+                return FileResponse(file_path, headers={"Cache-Control": "public, max-age=31536000, immutable"})
+            return FileResponse(file_path, headers=no_cache)
+        return FileResponse(static_dir / "index.html", headers=no_cache)

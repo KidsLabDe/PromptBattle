@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 
+from backend.config import settings
 from backend.game_state import create_game, get_game
 from backend.models import (
     GameMode,
@@ -13,18 +14,23 @@ from backend.services.target_images import pick_random_target, target_image_path
 router = APIRouter(prefix="/api")
 
 
+@router.get("/config")
+async def get_config():
+    """Return frontend-relevant timing configuration."""
+    return {
+        "compare_bar_seconds": settings.compare_bar_seconds,
+        "score_reveal_seconds": settings.score_reveal_seconds,
+        "result_display_seconds": settings.result_display_seconds,
+        "round_time_seconds": settings.round_time_seconds,
+    }
+
+
 @router.post("/game/start", response_model=StartGameResponse)
 async def start_game(req: StartGameRequest | None = None):
     mode = req.mode if req else GameMode.SINGLE
     game = create_game(mode=mode)
     target = pick_random_target()
     game.start_round(target)
-
-    player_tokens = None
-    if mode == GameMode.MULTI:
-        player_tokens = {
-            str(k): v for k, v in game.player_tokens.items()
-        }
 
     return StartGameResponse(
         game_id=game.game_id,
@@ -33,7 +39,7 @@ async def start_game(req: StartGameRequest | None = None):
         round=game.round,
         threshold=game.threshold,
         time_seconds=game.time_remaining,
-        player_tokens=player_tokens,
+        join_token=game.join_token if mode == GameMode.MULTI else None,
     )
 
 
@@ -57,6 +63,15 @@ async def validate_player(game_id: str, token: str):
     game = get_game(game_id)
     if not game:
         raise HTTPException(404, "Game not found")
+    # Check if token is the join token (valid for joining)
+    if token == game.join_token:
+        return {
+            "valid": True,
+            "game_id": game_id,
+            "status": game.status,
+            "round": game.round,
+        }
+    # Check if already assigned player token
     player = game.get_player_by_token(token)
     if player is None:
         raise HTTPException(403, "Invalid player token")

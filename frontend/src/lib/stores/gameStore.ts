@@ -1,6 +1,6 @@
 import { writable, derived } from 'svelte/store';
 
-export type UIState = 'title' | 'lobby' | 'playing' | 'generating' | 'result' | 'gameover';
+export type UIState = 'title' | 'lobby' | 'playing' | 'generating' | 'comparing' | 'result' | 'gameover';
 export type GameMode = 'single' | 'multi';
 
 export interface RoundResult {
@@ -28,7 +28,10 @@ export const currentPassed = writable<boolean>(false);
 export const history = writable<RoundResult[]>([]);
 
 // Multiplayer stores
+export const joinToken = writable<string>('');
 export const playerTokens = writable<{ '1': string; '2': string } | null>(null);
+export const connectedPlayerCount = writable<number>(0);
+export const isPhoneControl = writable<boolean>(false);
 export const player1Image = writable<string>('');
 export const player2Image = writable<string>('');
 export const player1Score = writable<number>(0);
@@ -46,6 +49,10 @@ export const player2Connected = writable<boolean>(false);
 export const player1Typing = writable<string>('');
 export const player2Typing = writable<string>('');
 export const autoCountdown = writable<number>(0);
+export const compareCountdown = writable<number>(0);
+export const player1RevealedScore = writable<number>(0);
+export const player2RevealedScore = writable<number>(0);
+export const revealActive = writable<boolean>(false);
 
 export const formattedTime = derived(timeRemaining, ($t) => {
 	const m = Math.floor($t / 60);
@@ -66,6 +73,9 @@ export function resetGame() {
 	currentScore.set(0);
 	currentPassed.set(false);
 	history.set([]);
+	joinToken.set('');
+	connectedPlayerCount.set(0);
+	isPhoneControl.set(false);
 	playerTokens.set(null);
 	player1Image.set('');
 	player2Image.set('');
@@ -84,6 +94,7 @@ export function resetGame() {
 	player1Typing.set('');
 	player2Typing.set('');
 	autoCountdown.set(0);
+	compareCountdown.set(0);
 }
 
 export function resetMultiRound() {
@@ -101,4 +112,8 @@ export function resetMultiRound() {
 	player1Typing.set('');
 	player2Typing.set('');
 	autoCountdown.set(0);
+	compareCountdown.set(0);
+	player1RevealedScore.set(0);
+	player2RevealedScore.set(0);
+	revealActive.set(false);
 }

@@ -22,17 +22,16 @@ class GameState:
         self._timer_task: asyncio.Task | None = None
         self.started: datetime = datetime.now()
 
+        # Join token: single QR code for all players
+        self.join_token: str = uuid.uuid4().hex[:8]
+
         # Multiplayer fields
         self.player_tokens: dict[int, str] = {}
         self.prompts: dict[int, str] = {}
         self.player1_wins: int = 0
         self.player2_wins: int = 0
-
-        if mode == GameMode.MULTI:
-            self.player_tokens = {
-                1: uuid.uuid4().hex[:8],
-                2: uuid.uuid4().hex[:8],
-            }
+        self.num_players: int = 0  # set when game starts
+        self._generation_running: bool = False
 
     @property
     def threshold(self) -> float:
@@ -66,10 +65,22 @@ class GameState:
                 return player
         return None
 
+    def assign_player(self, join_token: str, connection_id: str | None = None) -> int | None:
+        """Assign next available player number if join_token is valid.
+        Uses connection_id to track reconnects from the same device."""
+        if join_token != self.join_token:
+            return None
+        if len(self.player_tokens) >= 2:
+            return None  # game full
+        player_num = len(self.player_tokens) + 1
+        player_token = uuid.uuid4().hex[:8]
+        self.player_tokens[player_num] = player_token
+        return player_num
+
     def submit_player_prompt(self, player: int, prompt: str) -> bool:
-        """Store prompt for player. Returns True if both players have submitted."""
+        """Store prompt for player. Returns True if all players have submitted."""
         self.prompts[player] = prompt
-        return len(self.prompts) >= 2
+        return len(self.prompts) >= self.num_players
 
 
 # Active games registry

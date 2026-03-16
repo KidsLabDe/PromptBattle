@@ -1,35 +1,127 @@
-import torch
+import asyncio
+import io
+import json
+import re
+from functools import partial
 from PIL import Image
-from transformers import CLIPModel, CLIPProcessor
 
 from backend.config import settings
 
-_model: CLIPModel | None = None
-_processor: CLIPProcessor | None = None
+# ── CLIP (local) ─────────────────────────────────────────────
+_model = None
+_processor = None
+_device: str = "cpu"
+
+
+def _get_device() -> str:
+    import torch
+    if torch.cuda.is_available():
+        return "cuda"
+    if torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
 
 
 def load_clip() -> None:
-    global _model, _processor
-    print(f"Loading CLIP model: {settings.clip_model}")
+    if settings.similarity_backend == "gemini":
+        print("Similarity backend: Gemini (no CLIP loading needed)")
+        return
+    global _model, _processor, _device
+    import torch
+    from transformers import CLIPModel, CLIPProcessor
+    _device = _get_device()
+    print(f"Loading CLIP model: {settings.clip_model} on {_device}")
     _processor = CLIPProcessor.from_pretrained(settings.clip_model)
-    _model = CLIPModel.from_pretrained(settings.clip_model).to("cuda").eval()
+    _model = CLIPModel.from_pretrained(settings.clip_model).to(_device).eval()
     print("CLIP model loaded.")
 
 
-def compute_similarity(image_a: Image.Image, image_b: Image.Image) -> float:
+def _compute_clip(image_a: Image.Image, image_b: Image.Image) -> float:
+    import torch
     assert _model is not None and _processor is not None, "CLIP not loaded"
 
     inputs = _processor(images=[image_a, image_b], return_tensors="pt", padding=True)
-    inputs = {k: v.to("cuda") for k, v in inputs.items()}
+    inputs = {k: v.to(_device) for k, v in inputs.items()}
 
     with torch.no_grad():
         outputs = _model.get_image_features(**inputs)
-        # Handle both raw tensor and BaseModelOutputWithPooling
         features = outputs if isinstance(outputs, torch.Tensor) else outputs.pooler_output
 
     features = features / features.norm(dim=-1, keepdim=True)
     raw_sim = (features[0] @ features[1]).item()
 
-    # remap from [clip_raw_min, clip_raw_max] to [0, 100]
     score = (raw_sim - settings.clip_raw_min) / (settings.clip_raw_max - settings.clip_raw_min)
     return max(0.0, min(100.0, score * 100.0))
+
+
+# ── Gemini (API) ─────────────────────────────────────────────
+_gemini_client = None
+
+
+def _load_gemini_similarity() -> None:
+    global _gemini_client
+    from google import genai
+    _gemini_client = genai.Client(api_key=settings.gemini_api_key)
+    print(f"Gemini similarity ready (model: {settings.similarity_gemini_model})")
+
+
+def _image_to_bytes(img: Image.Image) -> bytes:
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def _compute_gemini_sync(image_a: Image.Image, image_b: Image.Image) -> float:
+    if _gemini_client is None:
+        _load_gemini_similarity()
+
+    from google.genai import types
+
+    prompt = """Du bist ein Bildvergleichs-Experte. Vergleiche die beiden Bilder und bewerte ihre visuelle Ähnlichkeit.
+
+Bewerte auf einer Skala von 0 bis 100:
+- 0 = komplett unterschiedlich (andere Objekte, Szene, Farben)
+- 25 = leichte Ähnlichkeit (gleiche Kategorie, aber sehr verschieden)
+- 50 = moderate Ähnlichkeit (ähnliche Szene/Objekte, aber deutliche Unterschiede)
+- 75 = hohe Ähnlichkeit (gleiche Szene, ähnliche Komposition, kleine Unterschiede)
+- 100 = identisch
+
+Antworte NUR mit einem JSON-Objekt in diesem Format:
+{"score": <zahl>, "reason": "<kurze begründung auf deutsch>"}"""
+
+    img_a_bytes = _image_to_bytes(image_a)
+    img_b_bytes = _image_to_bytes(image_b)
+
+    response = _gemini_client.models.generate_content(
+        model=settings.similarity_gemini_model,
+        contents=[
+            prompt,
+            types.Part.from_bytes(data=img_a_bytes, mime_type="image/png"),
+            types.Part.from_bytes(data=img_b_bytes, mime_type="image/png"),
+        ],
+    )
+
+    text = response.text.strip()
+    # Extract JSON from response (may be wrapped in markdown code block)
+    json_match = re.search(r'\{[^}]+\}', text)
+    if json_match:
+        data = json.loads(json_match.group())
+        score = float(data.get("score", 0))
+        reason = data.get("reason", "")
+        print(f"Gemini similarity: {score}% - {reason}")
+        return max(0.0, min(100.0, score))
+
+    print(f"Warning: Could not parse Gemini similarity response: {text}")
+    return 50.0
+
+
+# ── Public API ───────────────────────────────────────────────
+
+async def compute_similarity(image_a: Image.Image, image_b: Image.Image) -> float:
+    if settings.similarity_backend == "gemini":
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(
+            None, partial(_compute_gemini_sync, image_a, image_b)
+        )
+    else:
+        return _compute_clip(image_a, image_b)

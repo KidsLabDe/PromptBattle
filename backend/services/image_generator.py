@@ -93,20 +93,47 @@ def _generate_gemini_sync(prompt: str) -> Image.Image:
     assert _gemini_client is not None, "Gemini client not loaded"
 
     prompt = _apply_prefix(prompt)
+    model = settings.gemini_model
 
-    response = _gemini_client.models.generate_content(
-        model=settings.gemini_model,
-        contents=[prompt],
-    )
-
-    for part in response.parts:
-        if part.inline_data is not None:
-            img_bytes = part.inline_data.data
+    # Imagen models use generate_images API
+    if "imagen" in model.lower():
+        from google.genai import types
+        response = _gemini_client.models.generate_images(
+            model=model,
+            prompt=prompt,
+            config=types.GenerateImagesConfig(number_of_images=1),
+        )
+        if response.generated_images:
+            img_bytes = response.generated_images[0].image.image_bytes
             return Image.open(io.BytesIO(img_bytes)).convert("RGB")
+    else:
+        # Gemini models use generate_content with image output config
+        from google.genai import types
+        response = _gemini_client.models.generate_content(
+            model=model,
+            contents=[prompt],
+            config=types.GenerateContentConfig(
+                response_modalities=["IMAGE", "TEXT"],
+            ),
+        )
+        if response.candidates:
+            for part in response.candidates[0].content.parts:
+                if part.inline_data is not None:
+                    img_bytes = part.inline_data.data
+                    return Image.open(io.BytesIO(img_bytes)).convert("RGB")
 
-    # Fallback: if no image was returned, create a blank image
+    # Fallback: if no image was returned, create a visible error image
     print(f"Warning: Gemini returned no image for prompt: {prompt[:80]}")
-    return Image.new("RGB", (1024, 1024), (30, 30, 30))
+    from PIL import ImageDraw, ImageFont
+    img = Image.new("RGB", (1024, 1024), (60, 20, 20))
+    draw = ImageDraw.Draw(img)
+    try:
+        font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 48)
+    except Exception:
+        font = ImageFont.load_default()
+    draw.text((512, 480), "Bild konnte nicht", fill=(200, 80, 80), font=font, anchor="mm")
+    draw.text((512, 540), "generiert werden", fill=(200, 80, 80), font=font, anchor="mm")
+    return img
 
 
 # ── Public API ───────────────────────────────────────────────

@@ -28,6 +28,7 @@ class StartGameResponse(BaseModel):
     round: int
     threshold: float
     time_seconds: int
+    join_token: str | None = None
     player_tokens: dict[str, str] | None = None
 
 

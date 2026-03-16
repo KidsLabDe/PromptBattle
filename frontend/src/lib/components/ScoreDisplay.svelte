@@ -32,14 +32,14 @@
 		<!-- Score text -->
 		<div class="mt-4 text-center">
 			<span
-				class="text-5xl font-bold"
+				class="font-pixel text-5xl"
 				class:text-neon-green={passed}
 				class:text-red-500={!passed}
 			>
 				{score.toFixed(1)}%
 			</span>
 		</div>
-		<p class="mt-2 text-center text-lg" class:text-neon-green={passed} class:text-red-500={!passed}>
+		<p class="font-pixel mt-2 text-center text-lg" class:text-neon-green={passed} class:text-red-500={!passed}>
 			{passed ? 'GESCHAFFT!' : 'NICHT BESTANDEN'}
 		</p>
 	</div>
