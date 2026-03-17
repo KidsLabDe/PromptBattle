@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { currentScore, threshold, currentPassed } from '$lib/stores/gameStore';
+	import { currentScore, threshold, currentPassed, player1Reason } from '$lib/stores/gameStore';
 
 	let score = $derived($currentScore);
 	let thresh = $derived($threshold);
@@ -42,5 +42,8 @@
 		<p class="font-pixel mt-2 text-center text-lg" class:text-neon-green={passed} class:text-red-500={!passed}>
 			{passed ? 'GESCHAFFT!' : 'NICHT BESTANDEN'}
 		</p>
+		{#if $player1Reason}
+			<p class="mt-2 text-center text-sm text-gray-500">{$player1Reason}</p>
+		{/if}
 	</div>
 </div>

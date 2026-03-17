@@ -187,10 +187,10 @@
 			case 'score_result':
 				currentScore.set(msg.data.score as number);
 				currentPassed.set(msg.data.passed as boolean);
+				player1Reason.set((msg.data.reason as string) || '');
 				if ($isPhoneControl) {
 					player1Score.set(msg.data.score as number);
 					player1Prompt.set('');
-					player1Reason.set((msg.data.reason as string) || '');
 				}
 				scoresReceived = true;
 				if ($uiState === 'comparing' && compareAnimDone) {
@@ -439,6 +439,9 @@
 						{$currentScore.toFixed(1)}%
 					</span>
 					<p class="text-gray-400">Mindestscore: {$threshold}%</p>
+					{#if $player1Reason}
+						<p class="max-w-md text-center text-sm text-gray-500">{$player1Reason}</p>
+					{/if}
 				{:else}
 					{#if $roundWinner === 1}
 						<h2 class="font-pixel text-5xl text-neon-pink">Spieler 1 gewinnt!</h2>
@@ -453,6 +456,9 @@
 							<span class="font-pixel text-5xl {$roundWinner === 1 ? 'text-neon-green' : $roundWinner === 2 ? 'text-red-500' : 'text-neon-yellow'}">
 								{$player1Score.toFixed(1)}%
 							</span>
+							{#if $player1Reason}
+								<p class="mt-1 max-w-xs text-xs text-gray-500">{$player1Reason}</p>
+							{/if}
 						</div>
 						<span class="font-pixel text-3xl text-gray-500">VS</span>
 						<div class="text-center">
@@ -460,6 +466,9 @@
 							<span class="font-pixel text-5xl {$roundWinner === 2 ? 'text-neon-green' : $roundWinner === 1 ? 'text-red-500' : 'text-neon-yellow'}">
 								{$player2Score.toFixed(1)}%
 							</span>
+							{#if $player2Reason}
+								<p class="mt-1 max-w-xs text-xs text-gray-500">{$player2Reason}</p>
+							{/if}
 						</div>
 					</div>
 					<div class="flex gap-4 text-2xl font-bold">
