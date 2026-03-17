@@ -36,7 +36,7 @@ def load_clip() -> None:
     print("CLIP model loaded.")
 
 
-def _compute_clip(image_a: Image.Image, image_b: Image.Image) -> float:
+def _compute_clip(image_a: Image.Image, image_b: Image.Image) -> tuple[float, str]:
     import torch
     assert _model is not None and _processor is not None, "CLIP not loaded"
 
@@ -51,7 +51,7 @@ def _compute_clip(image_a: Image.Image, image_b: Image.Image) -> float:
     raw_sim = (features[0] @ features[1]).item()
 
     score = (raw_sim - settings.clip_raw_min) / (settings.clip_raw_max - settings.clip_raw_min)
-    return max(0.0, min(100.0, score * 100.0))
+    return max(0.0, min(100.0, score * 100.0)), ""
 
 
 # ── Gemini (API) ─────────────────────────────────────────────
@@ -71,7 +71,7 @@ def _image_to_bytes(img: Image.Image) -> bytes:
     return buf.getvalue()
 
 
-def _compute_gemini_sync(image_a: Image.Image, image_b: Image.Image) -> float:
+def _compute_gemini_sync(image_a: Image.Image, image_b: Image.Image) -> tuple[float, str]:
     if _gemini_client is None:
         _load_gemini_similarity()
 
@@ -109,15 +109,16 @@ Antworte NUR mit einem JSON-Objekt in diesem Format:
         score = float(data.get("score", 0))
         reason = data.get("reason", "")
         print(f"Gemini similarity: {score}% - {reason}")
-        return max(0.0, min(100.0, score))
+        return max(0.0, min(100.0, score)), reason
 
     print(f"Warning: Could not parse Gemini similarity response: {text}")
-    return 50.0
+    return 50.0, ""
 
 
 # ── Public API ───────────────────────────────────────────────
 
-async def compute_similarity(image_a: Image.Image, image_b: Image.Image) -> float:
+async def compute_similarity(image_a: Image.Image, image_b: Image.Image) -> tuple[float, str]:
+    """Returns (score, reason) tuple."""
     if settings.similarity_backend == "gemini":
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(

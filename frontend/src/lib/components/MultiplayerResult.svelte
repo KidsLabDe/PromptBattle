@@ -4,6 +4,7 @@
 		player1Image, player2Image,
 		player1Score, player2Score,
 		player1Prompt, player2Prompt,
+		player1Reason, player2Reason,
 		roundWinner, player1Wins, player2Wins,
 		autoCountdown, isPhoneControl,
 		currentScore, currentPassed,
@@ -58,6 +59,9 @@
 			</span>
 			<p class="mt-2 text-gray-400">Mindestscore: {$threshold}%</p>
 			<p class="mt-1 text-sm text-gray-500 italic">"{$player1Prompt}"</p>
+			{#if $player1Reason}
+				<p class="mt-1 text-xs text-gray-500">{$player1Reason}</p>
+			{/if}
 		</div>
 
 		{#if $currentPassed && countdown > 0}
@@ -113,6 +117,9 @@
 					{$player1Score.toFixed(1)}%
 				</span>
 				<p class="max-w-xs text-center text-sm text-gray-400 italic">"{$player1Prompt}"</p>
+				{#if $player1Reason}
+					<p class="max-w-xs text-center text-xs text-gray-500">{$player1Reason}</p>
+				{/if}
 			</div>
 
 			<div class="flex flex-col items-center gap-3 {winner === 2 ? 'ring-4 ring-neon-blue rounded-2xl p-2' : ''}">
@@ -126,6 +133,9 @@
 					{$player2Score.toFixed(1)}%
 				</span>
 				<p class="max-w-xs text-center text-sm text-gray-400 italic">"{$player2Prompt}"</p>
+				{#if $player2Reason}
+					<p class="max-w-xs text-center text-xs text-gray-500">{$player2Reason}</p>
+				{/if}
 			</div>
 		</div>
 

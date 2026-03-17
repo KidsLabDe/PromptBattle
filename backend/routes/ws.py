@@ -143,7 +143,7 @@ async def _handle_single_player_msg(
         await send_json(ws, "generation_complete", {"image": gen_b64})
 
         target_img = Image.open(target_image_path(game.target_image)).convert("RGB")
-        score = await compute_similarity(target_img, generated)
+        score, reason = await compute_similarity(target_img, generated)
         passed = score >= game.threshold
 
         round_result = RoundResult(
@@ -163,6 +163,7 @@ async def _handle_single_player_msg(
             "passed": passed,
             "round": game.round,
             "generated_image": gen_b64,
+            "reason": reason,
         })
 
         game.status = GameStatus.RESULT
@@ -178,6 +179,7 @@ async def _handle_single_player_msg(
             threshold=game.threshold,
             passed=passed,
             generated_b64=gen_b64,
+            reason=reason,
         )
 
         if not passed:
@@ -412,11 +414,12 @@ async def _generate_for_player(
         }, targets=["main"])
 
         print(f"[GEN {datetime.now().strftime('%H:%M:%S')}] Computing similarity for player {player_num}...")
-        score = await compute_similarity(target_img, generated)
+        score, reason = await compute_similarity(target_img, generated)
         return {
             "prompt": prompt,
             "score": round(score, 1),
             "generated_image": gen_b64,
+            "reason": reason,
         }
     except Exception as e:
         print(f"ERROR generating for player {player_num}: {e}")
@@ -449,6 +452,7 @@ async def _run_multi_generation_inner(game: GameState, game_id: str, loop) -> No
                 "prompt": game.prompts.get(player_num, ""),
                 "score": 0.0,
                 "generated_image": placeholder,
+                "reason": "",
             }
             await broadcast(game_id, "generation_complete", {
                 "player": player_num, "image": placeholder,
@@ -477,6 +481,7 @@ async def _run_multi_generation_inner(game: GameState, game_id: str, loop) -> No
             "passed": passed,
             "round": game.round,
             "generated_image": results[1]["generated_image"],
+            "reason": results[1].get("reason", ""),
         }, targets=["main"])
 
         await broadcast(game_id, "player_result", {
@@ -499,6 +504,7 @@ async def _run_multi_generation_inner(game: GameState, game_id: str, loop) -> No
             threshold=game.threshold,
             passed=passed,
             generated_b64=results[1]["generated_image"],
+            reason=results[1].get("reason", ""),
         )
 
         if not passed:

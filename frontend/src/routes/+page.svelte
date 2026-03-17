@@ -7,7 +7,8 @@
 		currentScore, currentPassed, history, resetGame, resetMultiRound,
 		joinToken, connectedPlayerCount, isPhoneControl,
 		playerTokens, player1Image, player2Image, player1Score, player2Score,
-		player1Prompt, player2Prompt, player1Submitted, player2Submitted,
+		player1Prompt, player2Prompt, player1Reason, player2Reason,
+		player1Submitted, player2Submitted,
 		generatingPlayer, roundWinner, player1Wins, player2Wins,
 		player1Connected, player2Connected, player1Typing, player2Typing,
 		autoCountdown, compareCountdown,
@@ -189,6 +190,7 @@
 				if ($isPhoneControl) {
 					player1Score.set(msg.data.score as number);
 					player1Prompt.set('');
+					player1Reason.set((msg.data.reason as string) || '');
 				}
 				scoresReceived = true;
 				if ($uiState === 'comparing' && compareAnimDone) {
@@ -202,6 +204,8 @@
 				player2Score.set((msg.data.player2 as Record<string, unknown>).score as number);
 				player1Prompt.set((msg.data.player1 as Record<string, unknown>).prompt as string);
 				player2Prompt.set((msg.data.player2 as Record<string, unknown>).prompt as string);
+				player1Reason.set(((msg.data.player1 as Record<string, unknown>).reason as string) || '');
+				player2Reason.set(((msg.data.player2 as Record<string, unknown>).reason as string) || '');
 				roundWinner.set(msg.data.winner as number);
 				player1Wins.set(msg.data.player1_wins as number);
 				player2Wins.set(msg.data.player2_wins as number);

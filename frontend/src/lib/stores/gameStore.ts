@@ -38,6 +38,8 @@ export const player1Score = writable<number>(0);
 export const player2Score = writable<number>(0);
 export const player1Prompt = writable<string>('');
 export const player2Prompt = writable<string>('');
+export const player1Reason = writable<string>('');
+export const player2Reason = writable<string>('');
 export const player1Submitted = writable<boolean>(false);
 export const player2Submitted = writable<boolean>(false);
 export const generatingPlayer = writable<number>(0);
@@ -83,6 +85,8 @@ export function resetGame() {
 	player2Score.set(0);
 	player1Prompt.set('');
 	player2Prompt.set('');
+	player1Reason.set('');
+	player2Reason.set('');
 	player1Submitted.set(false);
 	player2Submitted.set(false);
 	generatingPlayer.set(0);
@@ -104,6 +108,8 @@ export function resetMultiRound() {
 	player2Score.set(0);
 	player1Prompt.set('');
 	player2Prompt.set('');
+	player1Reason.set('');
+	player2Reason.set('');
 	player1Submitted.set(false);
 	player2Submitted.set(false);
 	generatingPlayer.set(0);

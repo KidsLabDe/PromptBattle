@@ -38,6 +38,7 @@ def save_round_single(
     threshold: float,
     passed: bool,
     generated_b64: str,
+    reason: str = "",
 ) -> None:
     """Save a single-player round result."""
     game = _ensure_dir(_game_dir(game_id, started))
@@ -62,6 +63,7 @@ def save_round_single(
         "score": score,
         "threshold": threshold,
         "passed": passed,
+        "reason": reason,
     }
     (rdir / "result.json").write_text(json.dumps(result, indent=2, ensure_ascii=False))
 
@@ -106,11 +108,13 @@ def save_round_multi(
                 "player": 1,
                 "prompt": player1.get("prompt", ""),
                 "score": player1.get("score", 0),
+                "reason": player1.get("reason", ""),
             },
             {
                 "player": 2,
                 "prompt": player2.get("prompt", ""),
                 "score": player2.get("score", 0),
+                "reason": player2.get("reason", ""),
             },
         ],
         "winner": winner,
