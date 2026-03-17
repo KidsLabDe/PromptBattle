@@ -159,4 +159,7 @@
 	<p class="text-sm text-gray-600">
 		Bilder werden über Google Gemini API generiert und bewertet
 	</p>
+	<p class="text-sm text-gray-600">
+		Zielbilder: Unsplash &amp; Gregor Walter
+	</p>
 </div>
