@@ -6,7 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Backend
-uv sync                          # Install Python dependencies
+uv sync                          # Install Python dependencies (Gemini-only)
+uv sync --extra local            # Install with local GPU support (torch, diffusers, etc.)
 uv run run.py                    # Start backend (Uvicorn, default port 8000)
 
 # Frontend

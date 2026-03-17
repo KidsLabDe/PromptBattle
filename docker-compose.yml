@@ -1,0 +1,49 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: promptbattle
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      # HTTPS Router
+      - "traefik.http.routers.promptbattle.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.promptbattle.entryPoints=websecure"
+      - "traefik.http.routers.promptbattle.tls=true"
+      - "traefik.http.routers.promptbattle.tls.certresolver=myresolver"
+      - "traefik.http.routers.promptbattle.tls.domains[0].main=${DOMAIN}"
+      - "traefik.http.routers.promptbattle.middlewares=promptbattle-headers"
+      - "traefik.http.middlewares.promptbattle-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.middlewares.promptbattle-headers.headers.customrequestheaders.X-Forwarded-Host=${DOMAIN}"
+      - "traefik.http.services.promptbattle.loadbalancer.server.port=8000"
+      # HTTP Router mit Redirect auf HTTPS
+      - "traefik.http.routers.promptbattle-http.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.promptbattle-http.entryPoints=web"
+      - "traefik.http.routers.promptbattle-http.middlewares=promptbattle-redirect"
+      - "traefik.http.middlewares.promptbattle-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.promptbattle-redirect.redirectscheme.permanent=true"
+    env_file:
+      - .env.production
+    volumes:
+      - ./generated_history:/app/generated_history
+      - ./target_images:/app/target_images
+    networks:
+      - proxy
+      - default
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+networks:
+  proxy:
+    external: true
+  default:
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: fd00:1::/64
