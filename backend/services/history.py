@@ -40,6 +40,7 @@ def save_round_single(
     reason: str = "",
     generation_time: float | None = None,
     scoring_time: float | None = None,
+    error: str | None = None,
 ) -> None:
     """Save a single-player round result."""
     game = _ensure_dir(_game_dir(game_id, started))
@@ -71,6 +72,8 @@ def save_round_single(
         result["generation_time_seconds"] = round(generation_time, 2)
     if scoring_time is not None:
         result["scoring_time_seconds"] = round(scoring_time, 2)
+    if error:
+        result["error"] = error
     (rdir / "result.json").write_text(json.dumps(result, indent=2, ensure_ascii=False))
 
     # Update game.json
@@ -109,6 +112,8 @@ def save_round_multi(
             entry["generation_time_seconds"] = round(data["generation_time"], 2)
         if data.get("scoring_time") is not None:
             entry["scoring_time_seconds"] = round(data["scoring_time"], 2)
+        if data.get("error"):
+            entry["error"] = data["error"]
         return entry
 
     # Save metadata

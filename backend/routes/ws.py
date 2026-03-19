@@ -137,17 +137,36 @@ async def _handle_single_player_msg(
                 loop,
             )
 
-        t0 = time.monotonic()
-        generated = await generate_image(prompt, step_callback=step_callback)
-        gen_b64 = image_to_base64(generated)
-        generation_time = time.monotonic() - t0
+        error_msg = None
+        try:
+            t0 = time.monotonic()
+            generated = await generate_image(prompt, step_callback=step_callback)
+            gen_b64 = image_to_base64(generated)
+            generation_time = time.monotonic() - t0
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            error_msg = f"{type(e).__name__}: {e}"
+            gen_b64 = _error_placeholder_b64()
+            generation_time = time.monotonic() - t0
 
         await send_json(ws, "generation_complete", {"image": gen_b64})
 
-        target_img = Image.open(target_image_path(game.target_image)).convert("RGB")
-        t1 = time.monotonic()
-        score, reason = await compute_similarity(target_img, generated)
-        scoring_time = time.monotonic() - t1
+        scoring_time = None
+        if error_msg:
+            score, reason = 0.0, ""
+        else:
+            target_img = Image.open(target_image_path(game.target_image)).convert("RGB")
+            try:
+                t1 = time.monotonic()
+                score, reason = await compute_similarity(target_img, generated)
+                scoring_time = time.monotonic() - t1
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                error_msg = f"{type(e).__name__}: {e}"
+                score, reason = 0.0, ""
+
         passed = score >= game.threshold
 
         round_result = RoundResult(
@@ -186,6 +205,7 @@ async def _handle_single_player_msg(
             reason=reason,
             generation_time=generation_time,
             scoring_time=scoring_time,
+            error=error_msg,
         )
 
         if not passed:
@@ -434,8 +454,17 @@ async def _generate_for_player(
             "scoring_time": scoring_time,
         }
     except Exception as e:
+        import traceback
         print(f"ERROR generating for player {player_num}: {e}")
-        return None
+        traceback.print_exc()
+        placeholder = _error_placeholder_b64()
+        return {
+            "prompt": prompt,
+            "score": 0.0,
+            "generated_image": placeholder,
+            "reason": "",
+            "error": f"{type(e).__name__}: {e}",
+        }
 
 
 async def _run_multi_generation_inner(game: GameState, game_id: str, loop) -> None:
@@ -453,21 +482,14 @@ async def _run_multi_generation_inner(game: GameState, game_id: str, loop) -> No
     ]
     raw_results = await asyncio.gather(*tasks)
 
-    # Build results dict with fallback for failures
+    # Build results dict
     results: dict[int, dict] = {}
     for i, player_num in enumerate(player_nums):
-        if raw_results[i] is not None:
-            results[player_num] = raw_results[i]
-        else:
-            placeholder = _error_placeholder_b64()
-            results[player_num] = {
-                "prompt": game.prompts.get(player_num, ""),
-                "score": 0.0,
-                "generated_image": placeholder,
-                "reason": "",
-            }
+        results[player_num] = raw_results[i]
+        # If there was an error, broadcast the placeholder image
+        if "error" in results[player_num]:
             await broadcast(game_id, "generation_complete", {
-                "player": player_num, "image": placeholder,
+                "player": player_num, "image": results[player_num]["generated_image"],
             }, targets=["main"])
 
     if game.num_players == 1:
