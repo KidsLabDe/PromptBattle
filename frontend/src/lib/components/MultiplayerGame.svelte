@@ -3,6 +3,7 @@
 		targetImage, currentRound, threshold, timeRemaining,
 		player1Image, player2Image, player1Submitted, player2Submitted,
 		player1Typing, player2Typing, player1Prompt, player2Prompt,
+		player1Error, player2Error,
 		generatingPlayer, generationStep, generationTotal,
 		player1Wins, player2Wins, isPhoneControl,
 		player1RevealedScore, player2RevealedScore, revealActive,
@@ -156,6 +157,12 @@
 								<div class="h-full w-full rounded-full bg-neon-pink/50 animate-pulse"></div>
 							</div>
 						</div>
+					{:else if $player1Error}
+						<div class="flex h-full flex-col items-center justify-center gap-3 p-4">
+							<span class="text-4xl">&#x26A0;</span>
+							<p class="font-pixel text-lg text-red-400">Fehler</p>
+							<p class="text-center text-sm text-gray-400 break-words max-w-full">{$player1Error}</p>
+						</div>
 					{:else if $player1Image}
 						<img src="data:image/webp;base64,{$player1Image}" alt="Spieler 1" class="h-full w-full object-cover" />
 					{:else}
@@ -189,6 +196,12 @@
 							<div class="w-3/4 h-1.5 rounded-full bg-gray-800 overflow-hidden">
 								<div class="h-full w-full rounded-full bg-neon-blue/50 animate-pulse"></div>
 							</div>
+						</div>
+					{:else if $player2Error}
+						<div class="flex h-full flex-col items-center justify-center gap-3 p-4">
+							<span class="text-4xl">&#x26A0;</span>
+							<p class="font-pixel text-lg text-red-400">Fehler</p>
+							<p class="text-center text-sm text-gray-400 break-words max-w-full">{$player2Error}</p>
 						</div>
 					{:else if $player2Image}
 						<img src="data:image/webp;base64,{$player2Image}" alt="Spieler 2" class="h-full w-full object-cover" />

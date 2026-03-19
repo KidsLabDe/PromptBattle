@@ -11,6 +11,7 @@
 		player1Submitted, player2Submitted,
 		generatingPlayer, roundWinner, player1Wins, player2Wins,
 		player1Connected, player2Connected, player1Typing, player2Typing,
+		player1Error, player2Error,
 		autoCountdown, compareCountdown,
 		player1RevealedScore, player2RevealedScore, revealActive,
 		type RoundResult, type GameMode as GM
@@ -192,8 +193,13 @@
 			case 'generation_complete':
 				if (msg.data.player) {
 					const p = msg.data.player as number;
-					if (p === 1) player1Image.set(msg.data.image as string);
-					else player2Image.set(msg.data.image as string);
+					if (p === 1) {
+						player1Image.set(msg.data.image as string);
+						if (msg.data.error) player1Error.set(msg.data.error as string);
+					} else {
+						player2Image.set(msg.data.image as string);
+						if (msg.data.error) player2Error.set(msg.data.error as string);
+					}
 					// For single-player-via-phone: show images then compare
 					if ($isPhoneControl && p === 1 && $uiState !== 'comparing') {
 						startImageDisplayPhase();

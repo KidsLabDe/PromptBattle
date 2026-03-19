@@ -50,6 +50,8 @@ export const player1Connected = writable<boolean>(false);
 export const player2Connected = writable<boolean>(false);
 export const player1Typing = writable<string>('');
 export const player2Typing = writable<string>('');
+export const player1Error = writable<string>('');
+export const player2Error = writable<string>('');
 export const autoCountdown = writable<number>(0);
 export const compareCountdown = writable<number>(0);
 export const player1RevealedScore = writable<number>(0);
@@ -97,6 +99,8 @@ export function resetGame() {
 	player2Connected.set(false);
 	player1Typing.set('');
 	player2Typing.set('');
+	player1Error.set('');
+	player2Error.set('');
 	autoCountdown.set(0);
 	compareCountdown.set(0);
 }
@@ -117,6 +121,8 @@ export function resetMultiRound() {
 	generationStep.set(0);
 	player1Typing.set('');
 	player2Typing.set('');
+	player1Error.set('');
+	player2Error.set('');
 	autoCountdown.set(0);
 	compareCountdown.set(0);
 	player1RevealedScore.set(0);

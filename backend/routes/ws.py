@@ -150,7 +150,10 @@ async def _handle_single_player_msg(
             gen_b64 = _error_placeholder_b64()
             generation_time = time.monotonic() - t0
 
-        await send_json(ws, "generation_complete", {"image": gen_b64})
+        gen_complete_data: dict = {"image": gen_b64}
+        if error_msg:
+            gen_complete_data["error"] = error_msg
+        await send_json(ws, "generation_complete", gen_complete_data)
 
         scoring_time = None
         if error_msg:
@@ -486,10 +489,12 @@ async def _run_multi_generation_inner(game: GameState, game_id: str, loop) -> No
     results: dict[int, dict] = {}
     for i, player_num in enumerate(player_nums):
         results[player_num] = raw_results[i]
-        # If there was an error, broadcast the placeholder image
+        # If there was an error, broadcast the placeholder image with error message
         if "error" in results[player_num]:
             await broadcast(game_id, "generation_complete", {
-                "player": player_num, "image": results[player_num]["generated_image"],
+                "player": player_num,
+                "image": results[player_num]["generated_image"],
+                "error": results[player_num]["error"],
             }, targets=["main"])
 
     if game.num_players == 1:
