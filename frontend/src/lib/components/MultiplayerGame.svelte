@@ -53,13 +53,19 @@
 			<div class="flex flex-col items-center gap-3">
 				<h3 class="text-sm font-semibold uppercase tracking-widest text-neon-pink">Dein Bild</h3>
 				<div class="aspect-square w-full overflow-hidden rounded-xl border-2 border-neon-pink/30 bg-bg-card">
-					{#if genPlayer > 0 && !$player1Image}
+					{#if genPlayer > 0 && !$player1Image && !$player1Error}
 						<div class="flex h-full flex-col items-center justify-center gap-4">
 							<div class="h-12 w-12 animate-spin rounded-full border-4 border-neon-pink/30 border-t-neon-pink"></div>
 							<p class="font-pixel text-neon-pink">Bild wird generiert...</p>
 							<div class="w-3/4 h-1.5 rounded-full bg-gray-800 overflow-hidden">
 								<div class="h-full w-full rounded-full bg-neon-pink/50 animate-pulse"></div>
 							</div>
+						</div>
+					{:else if $player1Error}
+						<div class="flex h-full flex-col items-center justify-center gap-3 p-4">
+							<span class="text-4xl">&#x26A0;</span>
+							<p class="font-pixel text-lg text-red-400">Fehler</p>
+							<p class="text-center text-sm text-gray-400 break-words max-w-full">{$player1Error}</p>
 						</div>
 					{:else if $player1Image}
 						<img src="data:image/webp;base64,{$player1Image}" alt="Generiert" class="h-full w-full object-cover" />

@@ -21,6 +21,7 @@ export const threshold = writable<number>(25);
 export const timeRemaining = writable<number>(60);
 export const targetImage = writable<string>('');
 export const generatedImage = writable<string>('');
+export const generationError = writable<string>('');
 export const generationStep = writable<number>(0);
 export const generationTotal = writable<number>(4);
 export const currentScore = writable<number>(0);
@@ -73,6 +74,7 @@ export function resetGame() {
 	timeRemaining.set(60);
 	targetImage.set('');
 	generatedImage.set('');
+	generationError.set('');
 	generationStep.set(0);
 	currentScore.set(0);
 	currentPassed.set(false);

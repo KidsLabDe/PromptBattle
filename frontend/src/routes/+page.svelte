@@ -3,7 +3,7 @@
 	import { GameWebSocket } from '$lib/websocket';
 	import {
 		uiState, gameMode, gameId, currentRound, threshold, timeRemaining,
-		targetImage, generatedImage, generationStep, generationTotal,
+		targetImage, generatedImage, generationError, generationStep, generationTotal,
 		currentScore, currentPassed, history, resetGame, resetMultiRound,
 		joinToken, connectedPlayerCount, isPhoneControl,
 		playerTokens, player1Image, player2Image, player1Score, player2Score,
@@ -213,6 +213,7 @@
 					}
 				} else {
 					generatedImage.set(msg.data.image as string);
+					if (msg.data.error) generationError.set(msg.data.error as string);
 				}
 				break;
 			case 'score_result':
