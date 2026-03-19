@@ -19,7 +19,7 @@
 	);
 </script>
 
-<div class="flex flex-col gap-6">
+<div class="flex h-full flex-col gap-4">
 	<!-- Header -->
 	<div class="flex items-center justify-between">
 		<span class="rounded-lg bg-neon-pink/20 px-3 py-1 font-bold text-neon-pink">
@@ -132,8 +132,8 @@
 	{:else}
 		<!-- Multiplayer Phase 2: Generation/Result — kleines Zielbild, große Spielerbilder -->
 		<div class="flex justify-center">
-			<div class="w-56">
-				<h3 class="mb-2 text-center text-sm font-semibold uppercase tracking-widest text-neon-yellow">Zielbild</h3>
+			<div class="w-40">
+				<h3 class="mb-1 text-center text-sm font-semibold uppercase tracking-widest text-neon-yellow">Zielbild</h3>
 				<div class="aspect-square w-full overflow-hidden rounded-xl border-2 border-neon-yellow/30 bg-bg-card">
 					{#if src}
 						<img {src} alt="Zielbild" class="h-full w-full object-cover" />
@@ -143,11 +143,11 @@
 		</div>
 
 		<!-- Two player columns -->
-		<div class="grid grid-cols-2 gap-8">
+		<div class="grid min-h-0 flex-1 grid-cols-2 gap-8">
 			<!-- Spieler 1 -->
-			<div class="flex flex-col items-center gap-3">
+			<div class="flex min-h-0 flex-col items-center gap-2">
 				<h3 class="font-pixel text-xl text-neon-pink">Spieler 1</h3>
-				<div class="aspect-square w-full overflow-hidden rounded-xl border-2 border-neon-pink/30 bg-bg-card">
+				<div class="aspect-square w-full max-h-[50vh] overflow-hidden rounded-xl border-2 border-neon-pink/30 bg-bg-card">
 					{#if genPlayer > 0 && !$player1Image}
 						<div class="flex h-full flex-col items-center justify-center gap-4">
 							<div class="h-12 w-12 animate-spin rounded-full border-4 border-neon-pink/30 border-t-neon-pink"></div>
@@ -179,9 +179,9 @@
 			</div>
 
 			<!-- Spieler 2 -->
-			<div class="flex flex-col items-center gap-3">
+			<div class="flex min-h-0 flex-col items-center gap-2">
 				<h3 class="font-pixel text-xl text-neon-blue">Spieler 2</h3>
-				<div class="aspect-square w-full overflow-hidden rounded-xl border-2 border-neon-blue/30 bg-bg-card">
+				<div class="aspect-square w-full max-h-[50vh] overflow-hidden rounded-xl border-2 border-neon-blue/30 bg-bg-card">
 					{#if genPlayer > 0 && !$player2Image}
 						<div class="flex h-full flex-col items-center justify-center gap-4">
 							<div class="h-12 w-12 animate-spin rounded-full border-4 border-neon-blue/30 border-t-neon-blue"></div>

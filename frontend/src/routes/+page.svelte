@@ -380,7 +380,7 @@
 	let roundHistory = $derived($history);
 </script>
 
-<div class="mx-auto max-w-6xl px-4 py-8">
+<div class="mx-auto max-w-6xl px-4 py-4">
 	{#if state === 'title'}
 		<!-- Loading — auto-redirects to kiosk -->
 		<div class="flex min-h-[80vh] items-center justify-center">
@@ -391,6 +391,8 @@
 		<QRLobby onstart={startGameFromLobby} />
 
 	{:else if (state === 'playing' || state === 'generating' || state === 'comparing' || state === 'result') && (mode === 'multi' || $isPhoneControl)}
+		<div class="flex h-[calc(100vh-2rem)] flex-col overflow-hidden">
+		<div class="min-h-0 flex-1">
 		<MultiplayerGame />
 
 		{#if state === 'comparing'}
@@ -484,6 +486,8 @@
 				{/if}
 			</div>
 		{/if}
+		</div>
+		</div>
 
 	{:else if state === 'playing' || state === 'generating'}
 		<!-- Einzelspieler -->

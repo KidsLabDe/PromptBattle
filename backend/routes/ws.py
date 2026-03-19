@@ -137,13 +137,17 @@ async def _handle_single_player_msg(
                 loop,
             )
 
+        t0 = time.monotonic()
         generated = await generate_image(prompt, step_callback=step_callback)
         gen_b64 = image_to_base64(generated)
+        generation_time = time.monotonic() - t0
 
         await send_json(ws, "generation_complete", {"image": gen_b64})
 
         target_img = Image.open(target_image_path(game.target_image)).convert("RGB")
+        t1 = time.monotonic()
         score, reason = await compute_similarity(target_img, generated)
+        scoring_time = time.monotonic() - t1
         passed = score >= game.threshold
 
         round_result = RoundResult(
@@ -180,6 +184,8 @@ async def _handle_single_player_msg(
             passed=passed,
             generated_b64=gen_b64,
             reason=reason,
+            generation_time=generation_time,
+            scoring_time=scoring_time,
         )
 
         if not passed:
@@ -405,21 +411,27 @@ async def _generate_for_player(
                 )
             return step_callback
 
+        t0 = time.monotonic()
         generated = await generate_image(prompt, step_callback=make_step_cb(player_num))
         gen_b64 = image_to_base64(generated)
+        generation_time = time.monotonic() - t0
 
-        print(f"[GEN {datetime.now().strftime('%H:%M:%S')}] Player {player_num} image generated, broadcasting...")
+        print(f"[GEN {datetime.now().strftime('%H:%M:%S')}] Player {player_num} image generated in {generation_time:.1f}s, broadcasting...")
         await broadcast(game_id, "generation_complete", {
             "player": player_num, "image": gen_b64,
         }, targets=["main"])
 
         print(f"[GEN {datetime.now().strftime('%H:%M:%S')}] Computing similarity for player {player_num}...")
+        t1 = time.monotonic()
         score, reason = await compute_similarity(target_img, generated)
+        scoring_time = time.monotonic() - t1
         return {
             "prompt": prompt,
             "score": round(score, 1),
             "generated_image": gen_b64,
             "reason": reason,
+            "generation_time": generation_time,
+            "scoring_time": scoring_time,
         }
     except Exception as e:
         print(f"ERROR generating for player {player_num}: {e}")
@@ -505,6 +517,8 @@ async def _run_multi_generation_inner(game: GameState, game_id: str, loop) -> No
             passed=passed,
             generated_b64=results[1]["generated_image"],
             reason=results[1].get("reason", ""),
+            generation_time=results[1].get("generation_time"),
+            scoring_time=results[1].get("scoring_time"),
         )
 
         if not passed:
@@ -617,11 +631,15 @@ async def _handle_multi_time_up(game: GameState) -> None:
     """Handle time running out."""
     game_id = game.game_id
 
+    # Broadcast time_up first so phones can auto-submit their typed prompt
+    await broadcast(game_id, "time_up", {})
+    # Short delay to allow auto-submitted prompts from phones to arrive
+    await asyncio.sleep(0.5)
+
     if game.num_players == 1:
         # Single player via phone — time up = game over
         if len(game.prompts) == 0:
             game.game_over()
-            await broadcast(game_id, "time_up", {})
             await broadcast(game_id, "game_over", {
                 "round": game.round,
                 "history": [r.model_dump() for r in game.history],
@@ -629,17 +647,19 @@ async def _handle_multi_time_up(game: GameState) -> None:
         # If already submitted, generation is running
         return
 
-    if len(game.prompts) == 1:
+    if len(game.prompts) >= 2:
+        # Both players submitted (possibly via auto-submit) — generation will be
+        # triggered by submit_prompt handler, nothing to do here
+        pass
+    elif len(game.prompts) == 1:
         # One player submitted — give empty prompt to other, run generation
         submitted_player = list(game.prompts.keys())[0]
         other_player = 3 - submitted_player
         game.prompts[other_player] = "(kein Prompt eingereicht)"
 
-        await broadcast(game_id, "time_up", {})
         await _run_multi_generation(game)
     elif len(game.prompts) == 0:
         # Nobody submitted — auto-restart after delay
-        await broadcast(game_id, "time_up", {})
         await broadcast(game_id, "auto_restart", {
             "seconds": settings.multi_restart_delay_seconds,
             "player1_wins": game.player1_wins,

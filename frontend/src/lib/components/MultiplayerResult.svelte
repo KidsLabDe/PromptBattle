@@ -16,7 +16,7 @@
 	let singleMode = $derived($isPhoneControl);
 </script>
 
-<div class="flex flex-col gap-6">
+<div class="flex h-full flex-col gap-4 overflow-hidden">
 	{#if singleMode}
 		<!-- Single player via phone result -->
 		<div class="flex items-center justify-between">
@@ -105,10 +105,10 @@
 			</div>
 		</div>
 
-		<div class="grid grid-cols-2 gap-8">
-			<div class="flex flex-col items-center gap-3 {winner === 1 ? 'ring-4 ring-neon-pink rounded-2xl p-2' : ''}">
+		<div class="grid min-h-0 flex-1 grid-cols-2 gap-8">
+			<div class="flex min-h-0 flex-col items-center gap-2 {winner === 1 ? 'ring-4 ring-neon-pink rounded-2xl p-2' : ''}">
 				<h3 class="font-pixel text-xl text-neon-pink">Spieler 1</h3>
-				<div class="aspect-square w-full overflow-hidden rounded-xl border-2 border-neon-pink/30 bg-bg-card">
+				<div class="aspect-square w-full max-h-[45vh] overflow-hidden rounded-xl border-2 border-neon-pink/30 bg-bg-card">
 					{#if $player1Image}
 						<img src="data:image/webp;base64,{$player1Image}" alt="Spieler 1" class="h-full w-full object-cover" />
 					{/if}
@@ -122,9 +122,9 @@
 				{/if}
 			</div>
 
-			<div class="flex flex-col items-center gap-3 {winner === 2 ? 'ring-4 ring-neon-blue rounded-2xl p-2' : ''}">
+			<div class="flex min-h-0 flex-col items-center gap-2 {winner === 2 ? 'ring-4 ring-neon-blue rounded-2xl p-2' : ''}">
 				<h3 class="font-pixel text-xl text-neon-blue">Spieler 2</h3>
-				<div class="aspect-square w-full overflow-hidden rounded-xl border-2 border-neon-blue/30 bg-bg-card">
+				<div class="aspect-square w-full max-h-[45vh] overflow-hidden rounded-xl border-2 border-neon-blue/30 bg-bg-card">
 					{#if $player2Image}
 						<img src="data:image/webp;base64,{$player2Image}" alt="Spieler 2" class="h-full w-full object-cover" />
 					{/if}

@@ -77,6 +77,9 @@
 				break;
 			case 'time_up':
 				if (status === 'playing') {
+					if (prompt.trim() && ws) {
+						ws.send('submit_prompt', { prompt: prompt.trim() });
+					}
 					status = 'submitted';
 				}
 				break;

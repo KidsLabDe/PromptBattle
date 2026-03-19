@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import base64
 import json
-import shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -39,24 +38,21 @@ def save_round_single(
     passed: bool,
     generated_b64: str,
     reason: str = "",
+    generation_time: float | None = None,
+    scoring_time: float | None = None,
 ) -> None:
     """Save a single-player round result."""
     game = _ensure_dir(_game_dir(game_id, started))
     rdir = _ensure_dir(game / f"round_{round_num}")
 
-    # Copy target image
-    target_src = settings.target_images_dir / target_image_name
-    target_dst = rdir / f"target{target_src.suffix}"
-    if target_src.exists() and not target_dst.exists():
-        shutil.copy2(target_src, target_dst)
-
     # Save generated image
     _save_image(generated_b64, rdir / "generated.webp")
 
     # Save metadata
-    result = {
+    result: dict = {
         "round": round_num,
         "mode": "single",
+        "game_id": game_id,
         "target_image": target_image_name,
         "timestamp": datetime.now().isoformat(),
         "prompt": prompt,
@@ -64,7 +60,17 @@ def save_round_single(
         "threshold": threshold,
         "passed": passed,
         "reason": reason,
+        "image_backend": settings.image_backend,
+        "image_model": settings.gemini_model if settings.image_backend == "gemini" else settings.flux_model,
+        "similarity_backend": settings.similarity_backend,
+        "similarity_model": settings.similarity_gemini_model if settings.similarity_backend == "gemini" else settings.clip_model,
     }
+    if settings.prompt_prefix:
+        result["prompt_prefix"] = settings.prompt_prefix
+    if generation_time is not None:
+        result["generation_time_seconds"] = round(generation_time, 2)
+    if scoring_time is not None:
+        result["scoring_time_seconds"] = round(scoring_time, 2)
     (rdir / "result.json").write_text(json.dumps(result, indent=2, ensure_ascii=False))
 
     # Update game.json
@@ -82,43 +88,48 @@ def save_round_multi(
 ) -> None:
     """Save a multiplayer round result.
 
-    player1/player2 dicts contain: prompt, score, generated_image (base64)
+    player1/player2 dicts contain: prompt, score, generated_image (base64),
+    optionally generation_time, scoring_time
     """
     game = _ensure_dir(_game_dir(game_id, started))
     rdir = _ensure_dir(game / f"round_{round_num}")
-
-    # Copy target image
-    target_src = settings.target_images_dir / target_image_name
-    target_dst = rdir / f"target{target_src.suffix}"
-    if target_src.exists() and not target_dst.exists():
-        shutil.copy2(target_src, target_dst)
 
     # Save generated images
     _save_image(player1.get("generated_image", ""), rdir / "player1.webp")
     _save_image(player2.get("generated_image", ""), rdir / "player2.webp")
 
+    def _player_entry(num: int, data: dict) -> dict:
+        entry: dict = {
+            "player": num,
+            "prompt": data.get("prompt", ""),
+            "score": data.get("score", 0),
+            "reason": data.get("reason", ""),
+        }
+        if data.get("generation_time") is not None:
+            entry["generation_time_seconds"] = round(data["generation_time"], 2)
+        if data.get("scoring_time") is not None:
+            entry["scoring_time_seconds"] = round(data["scoring_time"], 2)
+        return entry
+
     # Save metadata
-    result = {
+    result: dict = {
         "round": round_num,
         "mode": "multi",
+        "game_id": game_id,
         "target_image": target_image_name,
         "timestamp": datetime.now().isoformat(),
         "players": [
-            {
-                "player": 1,
-                "prompt": player1.get("prompt", ""),
-                "score": player1.get("score", 0),
-                "reason": player1.get("reason", ""),
-            },
-            {
-                "player": 2,
-                "prompt": player2.get("prompt", ""),
-                "score": player2.get("score", 0),
-                "reason": player2.get("reason", ""),
-            },
+            _player_entry(1, player1),
+            _player_entry(2, player2),
         ],
         "winner": winner,
+        "image_backend": settings.image_backend,
+        "image_model": settings.gemini_model if settings.image_backend == "gemini" else settings.flux_model,
+        "similarity_backend": settings.similarity_backend,
+        "similarity_model": settings.similarity_gemini_model if settings.similarity_backend == "gemini" else settings.clip_model,
     }
+    if settings.prompt_prefix:
+        result["prompt_prefix"] = settings.prompt_prefix
     (rdir / "result.json").write_text(json.dumps(result, indent=2, ensure_ascii=False))
 
     # Update game.json
