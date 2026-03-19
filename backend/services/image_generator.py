@@ -117,16 +117,17 @@ def _generate_gemini_sync(prompt: str) -> Image.Image:
             ),
         )
         if response.candidates:
-            for part in response.candidates[0].content.parts:
-                if part.inline_data is not None:
-                    img_bytes = part.inline_data.data
-                    return Image.open(io.BytesIO(img_bytes)).convert("RGB")
+            candidate = response.candidates[0]
+            if candidate.content and candidate.content.parts:
+                for part in candidate.content.parts:
+                    if part.inline_data is not None:
+                        img_bytes = part.inline_data.data
+                        return Image.open(io.BytesIO(img_bytes)).convert("RGB")
 
     # No image returned — build a descriptive error and raise
     reason = "unknown"
     try:
         if not response.candidates:
-            # Check for prompt-level block reason
             if hasattr(response, "prompt_feedback") and response.prompt_feedback:
                 reason = f"prompt blocked: {response.prompt_feedback}"
             else:
@@ -135,10 +136,12 @@ def _generate_gemini_sync(prompt: str) -> Image.Image:
             candidate = response.candidates[0]
             if hasattr(candidate, "finish_reason") and candidate.finish_reason:
                 reason = f"finish_reason={candidate.finish_reason}"
-            # Collect any text parts the model returned instead of an image
-            text_parts = [p.text for p in candidate.content.parts if hasattr(p, "text") and p.text]
-            if text_parts:
-                reason += f", text response: {' '.join(text_parts)[:200]}"
+            if candidate.content and candidate.content.parts:
+                text_parts = [p.text for p in candidate.content.parts if hasattr(p, "text") and p.text]
+                if text_parts:
+                    reason += f", text response: {' '.join(text_parts)[:200]}"
+            elif not candidate.content:
+                reason += ", content=None (safety filter blocked response)"
     except Exception:
         pass
 
