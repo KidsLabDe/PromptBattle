@@ -122,18 +122,29 @@ def _generate_gemini_sync(prompt: str) -> Image.Image:
                     img_bytes = part.inline_data.data
                     return Image.open(io.BytesIO(img_bytes)).convert("RGB")
 
-    # Fallback: if no image was returned, create a visible error image
-    print(f"Warning: Gemini returned no image for prompt: {prompt[:80]}")
-    from PIL import ImageDraw, ImageFont
-    img = Image.new("RGB", (1024, 1024), (60, 20, 20))
-    draw = ImageDraw.Draw(img)
+    # No image returned — build a descriptive error and raise
+    reason = "unknown"
     try:
-        font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 48)
+        if not response.candidates:
+            # Check for prompt-level block reason
+            if hasattr(response, "prompt_feedback") and response.prompt_feedback:
+                reason = f"prompt blocked: {response.prompt_feedback}"
+            else:
+                reason = "no candidates returned (likely safety filter)"
+        else:
+            candidate = response.candidates[0]
+            if hasattr(candidate, "finish_reason") and candidate.finish_reason:
+                reason = f"finish_reason={candidate.finish_reason}"
+            # Collect any text parts the model returned instead of an image
+            text_parts = [p.text for p in candidate.content.parts if hasattr(p, "text") and p.text]
+            if text_parts:
+                reason += f", text response: {' '.join(text_parts)[:200]}"
     except Exception:
-        font = ImageFont.load_default()
-    draw.text((512, 480), "Bild konnte nicht", fill=(200, 80, 80), font=font, anchor="mm")
-    draw.text((512, 540), "generiert werden", fill=(200, 80, 80), font=font, anchor="mm")
-    return img
+        pass
+
+    msg = f"Gemini returned no image (reason: {reason}) for prompt: {prompt[:80]}"
+    print(f"Warning: {msg}")
+    raise RuntimeError(msg)
 
 
 # ── Public API ───────────────────────────────────────────────
