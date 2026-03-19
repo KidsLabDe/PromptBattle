@@ -106,6 +106,10 @@ def _generate_gemini_sync(prompt: str) -> Image.Image:
         if response.generated_images:
             img_bytes = response.generated_images[0].image.image_bytes
             return Image.open(io.BytesIO(img_bytes)).convert("RGB")
+        # Imagen returned no images (safety filter or other block)
+        msg = f"Imagen returned no image (likely safety filter) for prompt: {prompt[:80]}"
+        print(f"Warning: {msg}")
+        raise RuntimeError(msg)
     else:
         # Gemini models use generate_content with image output config
         from google.genai import types
@@ -124,30 +128,30 @@ def _generate_gemini_sync(prompt: str) -> Image.Image:
                         img_bytes = part.inline_data.data
                         return Image.open(io.BytesIO(img_bytes)).convert("RGB")
 
-    # No image returned — build a descriptive error and raise
-    reason = "unknown"
-    try:
-        if not response.candidates:
-            if hasattr(response, "prompt_feedback") and response.prompt_feedback:
-                reason = f"prompt blocked: {response.prompt_feedback}"
+        # No image returned — build a descriptive error and raise
+        reason = "unknown"
+        try:
+            if not response.candidates:
+                if hasattr(response, "prompt_feedback") and response.prompt_feedback:
+                    reason = f"prompt blocked: {response.prompt_feedback}"
+                else:
+                    reason = "no candidates returned (likely safety filter)"
             else:
-                reason = "no candidates returned (likely safety filter)"
-        else:
-            candidate = response.candidates[0]
-            if hasattr(candidate, "finish_reason") and candidate.finish_reason:
-                reason = f"finish_reason={candidate.finish_reason}"
-            if candidate.content and candidate.content.parts:
-                text_parts = [p.text for p in candidate.content.parts if hasattr(p, "text") and p.text]
-                if text_parts:
-                    reason += f", text response: {' '.join(text_parts)[:200]}"
-            elif not candidate.content:
-                reason += ", content=None (safety filter blocked response)"
-    except Exception:
-        pass
+                candidate = response.candidates[0]
+                if hasattr(candidate, "finish_reason") and candidate.finish_reason:
+                    reason = f"finish_reason={candidate.finish_reason}"
+                if candidate.content and candidate.content.parts:
+                    text_parts = [p.text for p in candidate.content.parts if hasattr(p, "text") and p.text]
+                    if text_parts:
+                        reason += f", text response: {' '.join(text_parts)[:200]}"
+                elif not candidate.content:
+                    reason += ", content=None (safety filter blocked response)"
+        except Exception:
+            pass
 
-    msg = f"Gemini returned no image (reason: {reason}) for prompt: {prompt[:80]}"
-    print(f"Warning: {msg}")
-    raise RuntimeError(msg)
+        msg = f"Gemini returned no image (reason: {reason}) for prompt: {prompt[:80]}"
+        print(f"Warning: {msg}")
+        raise RuntimeError(msg)
 
 
 # ── Public API ───────────────────────────────────────────────
