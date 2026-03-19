@@ -66,8 +66,12 @@ def _load_gemini_similarity() -> None:
 
 
 def _image_to_bytes(img: Image.Image) -> bytes:
+    # Resize for similarity: 512px max is enough for comparison, saves tokens
+    if max(img.size) > 512:
+        img = img.copy()
+        img.thumbnail((512, 512), Image.LANCZOS)
     buf = io.BytesIO()
-    img.save(buf, format="PNG")
+    img.save(buf, format="JPEG", quality=80)
     return buf.getvalue()
 
 
@@ -96,8 +100,8 @@ Antworte NUR mit einem JSON-Objekt in diesem Format:
         model=settings.similarity_gemini_model,
         contents=[
             prompt,
-            types.Part.from_bytes(data=img_a_bytes, mime_type="image/png"),
-            types.Part.from_bytes(data=img_b_bytes, mime_type="image/png"),
+            types.Part.from_bytes(data=img_a_bytes, mime_type="image/jpeg"),
+            types.Part.from_bytes(data=img_b_bytes, mime_type="image/jpeg"),
         ],
     )
 

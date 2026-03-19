@@ -152,6 +152,14 @@ def _generate_gemini_sync(prompt: str) -> Image.Image:
 
 # ── Public API ───────────────────────────────────────────────
 
+def _maybe_resize(image: Image.Image) -> Image.Image:
+    """Resize image if gemini_image_size is set."""
+    target = settings.gemini_image_size
+    if target and settings.image_backend == "gemini" and max(image.size) > target:
+        image.thumbnail((target, target), Image.LANCZOS)
+    return image
+
+
 async def generate_image(prompt: str, step_callback=None) -> Image.Image:
     loop = asyncio.get_running_loop()
 
@@ -164,7 +172,7 @@ async def generate_image(prompt: str, step_callback=None) -> Image.Image:
         )
         if step_callback:
             step_callback(2, 2)
-        return image
+        return _maybe_resize(image)
     else:
         return await loop.run_in_executor(
             None, partial(_generate_local_sync, prompt, step_callback)

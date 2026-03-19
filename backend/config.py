@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     # Gemini API settings (used when image_backend=gemini)
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.5-flash-image-preview"
+    gemini_image_size: int = 512  # Resize generated images to this size (0 = no resize)
 
     # Prompt-Prefix: wird vor jeden Spieler-Prompt gesetzt.
     prompt_prefix: str = ""
