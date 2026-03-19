@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     max_threshold: int = 75
 
     # Multiplayer auto-flow settings
-    multi_result_display_seconds: int = 10
+    multi_result_display_seconds: int = 18
     multi_restart_delay_seconds: int = 5
 
     # Frontend animation timings (seconds)

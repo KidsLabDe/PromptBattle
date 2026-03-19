@@ -425,12 +425,15 @@
 		<QRLobby onstart={startGameFromLobby} />
 
 	{:else if (state === 'playing' || state === 'generating' || state === 'comparing' || state === 'result') && (mode === 'multi' || $isPhoneControl)}
-		<div class="flex h-[calc(100vh-2rem)] flex-col overflow-hidden">
-		<div class="min-h-0 flex-1">
-		<MultiplayerGame />
+		<div class="flex h-[calc(100vh-2rem)] flex-col">
+		<!-- Images area: shrinks to make room for info below -->
+		<div class="min-h-0 flex-1 overflow-hidden">
+			<MultiplayerGame />
+		</div>
 
+		<!-- Info area below images: always visible -->
 		{#if state === 'generating' && imageDisplayCountdown > 0}
-			<div class="mt-4 flex flex-col items-center gap-2">
+			<div class="shrink-0 py-3 flex flex-col items-center">
 				<p class="text-lg text-gray-400">
 					Vergleich startet in <span class="font-bold text-neon-yellow">{imageDisplayCountdown}</span>
 				</p>
@@ -438,8 +441,7 @@
 		{/if}
 
 		{#if state === 'comparing'}
-			<!-- Below images: compare progress -->
-			<div class="mt-6 flex flex-col items-center gap-3">
+			<div class="shrink-0 py-3 flex flex-col items-center gap-3">
 				<h2 class="font-pixel text-2xl text-neon-yellow animate-pulse-glow">
 					BILDER WERDEN VERGLICHEN...
 				</h2>
@@ -455,8 +457,7 @@
 		{/if}
 
 		{#if state === 'result' && $isPhoneControl && !scoreRevealed}
-			<!-- Single player: score bar below -->
-			<div class="mt-6 flex flex-col items-center gap-3">
+			<div class="shrink-0 py-3 flex flex-col items-center gap-3">
 				<h2 class="font-pixel text-2xl text-neon-green">ERGEBNIS</h2>
 				<div class="w-full max-w-lg">
 					<div class="h-6 w-full overflow-hidden rounded-full bg-bg-card border border-gray-700">
@@ -471,64 +472,53 @@
 		{/if}
 
 		{#if state === 'result' && scoreRevealed}
-			<!-- Winner announcement below -->
-			<div class="mt-6 flex flex-col items-center gap-4">
+			<div class="shrink-0 py-3 flex flex-col items-center gap-3">
 				{#if $isPhoneControl}
 					{#if $currentPassed}
-						<h2 class="font-pixel text-5xl text-neon-green">GESCHAFFT!</h2>
+						<h2 class="font-pixel text-4xl text-neon-green">GESCHAFFT!</h2>
 					{:else}
-						<h2 class="font-pixel text-5xl text-red-500">NICHT GESCHAFFT</h2>
+						<h2 class="font-pixel text-4xl text-red-500">NICHT GESCHAFFT</h2>
 					{/if}
-					<span class="font-pixel text-6xl" class:text-neon-green={$currentPassed} class:text-red-500={!$currentPassed}>
+					<span class="font-pixel text-5xl" class:text-neon-green={$currentPassed} class:text-red-500={!$currentPassed}>
 						{$currentScore.toFixed(1)}%
 					</span>
 					<p class="text-gray-400">Mindestscore: {$threshold}%</p>
-					{#if $player1Reason}
-						<p class="max-w-md text-center text-sm text-gray-500">{$player1Reason}</p>
-					{/if}
 				{:else}
 					{#if $roundWinner === 1}
-						<h2 class="font-pixel text-5xl text-neon-pink">Spieler 1 gewinnt!</h2>
+						<h2 class="font-pixel text-4xl text-neon-pink">Spieler 1 gewinnt!</h2>
 					{:else if $roundWinner === 2}
-						<h2 class="font-pixel text-5xl text-neon-blue">Spieler 2 gewinnt!</h2>
+						<h2 class="font-pixel text-4xl text-neon-blue">Spieler 2 gewinnt!</h2>
 					{:else}
-						<h2 class="font-pixel text-5xl text-neon-yellow">Unentschieden!</h2>
+						<h2 class="font-pixel text-4xl text-neon-yellow">Unentschieden!</h2>
 					{/if}
 					<div class="flex gap-12 items-center">
 						<div class="text-center">
-							<h3 class="font-pixel text-xl text-neon-pink mb-1">Spieler 1</h3>
-							<span class="font-pixel text-5xl {$roundWinner === 1 ? 'text-neon-green' : $roundWinner === 2 ? 'text-red-500' : 'text-neon-yellow'}">
+							<h3 class="font-pixel text-lg text-neon-pink">Spieler 1</h3>
+							<span class="font-pixel text-4xl {$roundWinner === 1 ? 'text-neon-green' : $roundWinner === 2 ? 'text-red-500' : 'text-neon-yellow'}">
 								{$player1Score.toFixed(1)}%
 							</span>
-							{#if $player1Reason}
-								<p class="mt-1 max-w-xs text-xs text-gray-500">{$player1Reason}</p>
-							{/if}
 						</div>
-						<span class="font-pixel text-3xl text-gray-500">VS</span>
+						<span class="font-pixel text-2xl text-gray-500">VS</span>
 						<div class="text-center">
-							<h3 class="font-pixel text-xl text-neon-blue mb-1">Spieler 2</h3>
-							<span class="font-pixel text-5xl {$roundWinner === 2 ? 'text-neon-green' : $roundWinner === 1 ? 'text-red-500' : 'text-neon-yellow'}">
+							<h3 class="font-pixel text-lg text-neon-blue">Spieler 2</h3>
+							<span class="font-pixel text-4xl {$roundWinner === 2 ? 'text-neon-green' : $roundWinner === 1 ? 'text-red-500' : 'text-neon-yellow'}">
 								{$player2Score.toFixed(1)}%
 							</span>
-							{#if $player2Reason}
-								<p class="mt-1 max-w-xs text-xs text-gray-500">{$player2Reason}</p>
-							{/if}
 						</div>
 					</div>
-					<div class="flex gap-4 text-2xl font-bold">
+					<div class="flex gap-4 text-xl font-bold">
 						<span class="text-neon-pink">{$player1Wins}</span>
 						<span class="text-gray-500">:</span>
 						<span class="text-neon-blue">{$player2Wins}</span>
 					</div>
 				{/if}
 				{#if $autoCountdown > 0}
-					<p class="mt-2 text-lg text-gray-400">
+					<p class="text-lg text-gray-400">
 						Nächste Runde in <span class="font-bold text-neon-green">{$autoCountdown}</span>
 					</p>
 				{/if}
 			</div>
 		{/if}
-		</div>
 		</div>
 
 	{:else if state === 'playing' || state === 'generating'}
