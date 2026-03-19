@@ -489,6 +489,9 @@
 						{$currentScore.toFixed(1)}%
 					</span>
 					<p class="text-gray-400">Mindestscore: {$threshold}%</p>
+					{#if $player1Reason}
+						<p class="max-w-lg text-center text-xs text-gray-500">{$player1Reason}</p>
+					{/if}
 				{:else}
 					{#if $roundWinner === 1}
 						<h2 class="font-pixel text-4xl text-neon-pink">Spieler 1 gewinnt!</h2>
@@ -512,6 +515,12 @@
 							</span>
 						</div>
 					</div>
+					{#if $player1Reason || $player2Reason}
+						<div class="grid grid-cols-2 gap-8 w-full max-w-3xl">
+							<p class="text-center text-xs text-gray-500">{$player1Reason}</p>
+							<p class="text-center text-xs text-gray-500">{$player2Reason}</p>
+						</div>
+					{/if}
 					<div class="flex gap-4 text-xl font-bold">
 						<span class="text-neon-pink">{$player1Wins}</span>
 						<span class="text-gray-500">:</span>
