@@ -18,10 +18,12 @@ router = APIRouter(prefix="/api")
 async def get_config():
     """Return frontend-relevant timing configuration."""
     return {
+        "image_display_seconds": settings.image_display_seconds,
         "compare_bar_seconds": settings.compare_bar_seconds,
         "score_reveal_seconds": settings.score_reveal_seconds,
         "result_display_seconds": settings.result_display_seconds,
         "round_time_seconds": settings.round_time_seconds,
+        "gameover_restart_seconds": settings.gameover_restart_seconds,
     }
 
 

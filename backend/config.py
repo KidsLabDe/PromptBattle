@@ -46,9 +46,11 @@ class Settings(BaseSettings):
     multi_restart_delay_seconds: int = 5
 
     # Frontend animation timings (seconds)
+    image_display_seconds: float = 3.0    # Pause to show generated images before comparing
     compare_bar_seconds: float = 3.0      # "Bilder werden verglichen" bar duration
     score_reveal_seconds: float = 2.5     # Score bars animation duration
     result_display_seconds: float = 8.0   # How long the winner overlay shows
+    gameover_restart_seconds: float = 5.0 # How long gameover screen shows before auto-restart
 
     model_config = {"env_prefix": "PB_", "env_file": ".env", "env_file_encoding": "utf-8"}
 

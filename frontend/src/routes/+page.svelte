@@ -42,17 +42,42 @@
 	let scoreRevealed = $state(false);
 
 	// Timing config (defaults, overridden by /api/config)
+	let IMAGE_DISPLAY_MS = 3000;
 	let COMPARE_MS = 3000;
 	let SCORE_REVEAL_MS = 2500;
 	let RESULT_DISPLAY_SECONDS = 8;
+	let GAMEOVER_RESTART_SECONDS = 5;
 
 	// Fetch timing config from backend
 	if (browser) {
 		fetch('/api/config').then(r => r.json()).then(cfg => {
+			IMAGE_DISPLAY_MS = (cfg.image_display_seconds ?? 3) * 1000;
 			COMPARE_MS = (cfg.compare_bar_seconds ?? 3) * 1000;
 			SCORE_REVEAL_MS = (cfg.score_reveal_seconds ?? 2.5) * 1000;
 			RESULT_DISPLAY_SECONDS = cfg.result_display_seconds ?? 8;
+			GAMEOVER_RESTART_SECONDS = cfg.gameover_restart_seconds ?? 5;
 		}).catch(() => {});
+	}
+
+	// Countdown for image display phase and gameover
+	let imageDisplayCountdown = $state(0);
+	let gameoverCountdown = $state(0);
+
+	function startImageDisplayPhase() {
+		// Show generated images for a few seconds before starting comparison
+		const totalSeconds = Math.ceil(IMAGE_DISPLAY_MS / 1000);
+		imageDisplayCountdown = totalSeconds;
+		const countdownTimer = setInterval(() => {
+			imageDisplayCountdown--;
+			if (imageDisplayCountdown <= 0) {
+				clearInterval(countdownTimer);
+			}
+		}, 1000);
+		setTimeout(() => {
+			clearInterval(countdownTimer);
+			imageDisplayCountdown = 0;
+			startComparePhase();
+		}, IMAGE_DISPLAY_MS);
 	}
 
 	function startComparePhase() {
@@ -169,15 +194,15 @@
 					const p = msg.data.player as number;
 					if (p === 1) player1Image.set(msg.data.image as string);
 					else player2Image.set(msg.data.image as string);
-					// For single-player-via-phone: start comparing bar right after image is done
+					// For single-player-via-phone: show images then compare
 					if ($isPhoneControl && p === 1 && $uiState !== 'comparing') {
-						startComparePhase();
+						startImageDisplayPhase();
 					}
-					// Multiplayer: start comparing when both images ready
+					// Multiplayer: show images then compare when both ready
 					if (!$isPhoneControl && $gameMode === 'multi' && $uiState === 'generating') {
 						const otherReady = p === 1 ? !!$player2Image : !!$player1Image;
 						if (otherReady) {
-							startComparePhase();
+							startImageDisplayPhase();
 						}
 					}
 				} else {
@@ -363,9 +388,18 @@
 	// Kiosk auto-restart: when gameover state is reached (only for cases not handled by buffering)
 	$effect(() => {
 		if ($uiState === 'gameover' && ($isPhoneControl || $gameMode === 'multi')) {
-			// Delay restart so the gameover screen briefly shows
-			const timer = setTimeout(() => playAgain(), 3000);
-			return () => clearTimeout(timer);
+			const totalSeconds = Math.ceil(GAMEOVER_RESTART_SECONDS);
+			gameoverCountdown = totalSeconds;
+			const countdownTimer = setInterval(() => {
+				gameoverCountdown--;
+				if (gameoverCountdown <= 0) clearInterval(countdownTimer);
+			}, 1000);
+			const timer = setTimeout(() => {
+				clearInterval(countdownTimer);
+				gameoverCountdown = 0;
+				playAgain();
+			}, GAMEOVER_RESTART_SECONDS * 1000);
+			return () => { clearTimeout(timer); clearInterval(countdownTimer); };
 		}
 	});
 
@@ -394,6 +428,14 @@
 		<div class="flex h-[calc(100vh-2rem)] flex-col overflow-hidden">
 		<div class="min-h-0 flex-1">
 		<MultiplayerGame />
+
+		{#if state === 'generating' && imageDisplayCountdown > 0}
+			<div class="mt-4 flex flex-col items-center gap-2">
+				<p class="text-lg text-gray-400">
+					Vergleich startet in <span class="font-bold text-neon-yellow">{imageDisplayCountdown}</span>
+				</p>
+			</div>
+		{/if}
 
 		{#if state === 'comparing'}
 			<!-- Below images: compare progress -->
@@ -554,7 +596,9 @@
 			{/if}
 
 			{#if $isPhoneControl || mode === 'multi'}
-				<p class="text-gray-400">Neues Spiel startet automatisch...</p>
+				<p class="text-lg text-gray-400">
+					Neues Spiel in <span class="font-bold text-neon-green">{gameoverCountdown}</span>
+				</p>
 			{/if}
 
 			{#if !$isPhoneControl && mode === 'single' && roundHistory.length > 0}
