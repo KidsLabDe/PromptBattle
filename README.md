@@ -54,4 +54,4 @@ Zusammen mit Designstudierenden der HTW Dresden:
 
 ## Lizenz
 
-MIT
+Creative Commons
