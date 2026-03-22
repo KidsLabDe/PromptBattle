@@ -29,7 +29,7 @@
 			onkeydown={handleKeydown}
 			placeholder="Beschreibe das Zielbild..."
 			rows="3"
-			class="w-full rounded-xl border-2 border-neon-blue/30 bg-bg-card p-4 text-lg text-white
+			class="w-full rounded-xl border-2 border-neon-blue/30 bg-bg-card p-4 text-2xl text-white
 				placeholder-gray-500 transition-all duration-200
 				focus:border-neon-blue focus:outline-none focus:ring-2 focus:ring-neon-blue/20
 				disabled:opacity-50"

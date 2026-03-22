@@ -14,6 +14,7 @@
 		player1Error, player2Error,
 		autoCountdown, compareCountdown,
 		player1RevealedScore, player2RevealedScore, revealActive,
+		roundTimeSeconds,
 		type RoundResult, type GameMode as GM
 	} from '$lib/stores/gameStore';
 	import Timer from '$lib/components/Timer.svelte';
@@ -57,6 +58,7 @@
 			SCORE_REVEAL_MS = (cfg.score_reveal_seconds ?? 2.5) * 1000;
 			RESULT_DISPLAY_SECONDS = cfg.result_display_seconds ?? 8;
 			GAMEOVER_RESTART_SECONDS = cfg.gameover_restart_seconds ?? 5;
+			if (cfg.round_time_seconds) roundTimeSeconds.set(cfg.round_time_seconds);
 		}).catch(() => {});
 	}
 
@@ -491,7 +493,7 @@
 					</span>
 					<p class="text-gray-400">Mindestscore: {$threshold}%</p>
 					{#if $player1Reason}
-						<p class="max-w-lg text-center text-xs text-gray-500">{$player1Reason}</p>
+						<p class="max-w-lg text-center text-base text-gray-500">{$player1Reason}</p>
 					{/if}
 				{:else}
 					{#if $roundWinner === 1}
@@ -518,8 +520,8 @@
 					</div>
 					{#if $player1Reason || $player2Reason}
 						<div class="grid grid-cols-2 gap-8 w-full max-w-3xl">
-							<p class="text-center text-xs text-gray-500">{$player1Reason}</p>
-							<p class="text-center text-xs text-gray-500">{$player2Reason}</p>
+							<p class="text-center text-base text-gray-500">{$player1Reason}</p>
+							<p class="text-center text-base text-gray-500">{$player2Reason}</p>
 						</div>
 					{/if}
 					<div class="flex gap-4 text-xl font-bold">
@@ -614,11 +616,11 @@
 						{#each roundHistory as round}
 							<div class="flex items-center justify-between rounded-lg bg-bg-card p-4 border border-gray-800">
 								<div class="flex items-center gap-4">
-									<span class="text-sm font-bold text-gray-500">R{round.round}</span>
-									<span class="text-sm text-gray-400 max-w-xs truncate">{round.prompt}</span>
+									<span class="text-base font-bold text-gray-500">R{round.round}</span>
+									<span class="text-base text-gray-400 max-w-md truncate">{round.prompt}</span>
 								</div>
 								<div class="flex items-center gap-3">
-									<span class="text-sm text-gray-500">mind. {round.threshold}%</span>
+									<span class="text-base text-gray-500">mind. {round.threshold}%</span>
 									<span
 										class="font-bold"
 										class:text-neon-green={round.passed}

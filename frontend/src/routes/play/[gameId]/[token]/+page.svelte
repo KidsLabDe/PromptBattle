@@ -6,7 +6,7 @@
 	let playerNum = $state(0);
 	let status = $state<'connecting' | 'waiting' | 'playing' | 'submitted' | 'generating' | 'result' | 'gameover'>('connecting');
 	let prompt = $state('');
-	let timeRemaining = $state(60);
+	let timeRemaining = $state(0);
 	let round = $state(1);
 	let myScore = $state(0);
 	let opponentScore = $state(0);
@@ -217,7 +217,7 @@
 					oninput={handleInput}
 					placeholder="Beschreibe das Zielbild..."
 					rows="4"
-					class="w-full rounded-xl border-2 border-neon-blue/30 bg-bg-card p-4 text-lg text-white
+					class="w-full rounded-xl border-2 border-neon-blue/30 bg-bg-card p-4 text-2xl text-white
 						placeholder-gray-500 focus:border-neon-blue focus:outline-none"
 				></textarea>
 				<button

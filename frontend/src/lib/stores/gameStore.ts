@@ -18,7 +18,7 @@ export const gameMode = writable<GameMode>('single');
 export const gameId = writable<string>('');
 export const currentRound = writable<number>(1);
 export const threshold = writable<number>(25);
-export const timeRemaining = writable<number>(60);
+export const timeRemaining = writable<number>(0);
 export const targetImage = writable<string>('');
 export const generatedImage = writable<string>('');
 export const generationError = writable<string>('');
@@ -58,6 +58,7 @@ export const compareCountdown = writable<number>(0);
 export const player1RevealedScore = writable<number>(0);
 export const player2RevealedScore = writable<number>(0);
 export const revealActive = writable<boolean>(false);
+export const roundTimeSeconds = writable<number>(60);
 
 export const formattedTime = derived(timeRemaining, ($t) => {
 	const m = Math.floor($t / 60);
@@ -71,7 +72,7 @@ export function resetGame() {
 	gameId.set('');
 	currentRound.set(1);
 	threshold.set(25);
-	timeRemaining.set(60);
+	timeRemaining.set(0);
 	targetImage.set('');
 	generatedImage.set('');
 	generationError.set('');

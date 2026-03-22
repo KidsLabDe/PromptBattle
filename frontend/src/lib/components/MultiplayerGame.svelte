@@ -72,12 +72,12 @@
 					{:else if $player1Submitted}
 						<div class="flex h-full flex-col items-center justify-center gap-2 p-4">
 							<span class="text-4xl text-neon-green">&#x2714;</span>
-							<p class="text-center text-xl text-gray-400 italic break-words max-w-full">"{$player1Prompt}"</p>
+							<p class="text-center text-2xl text-gray-400 italic break-words max-w-full">"{$player1Prompt}"</p>
 						</div>
 					{:else}
 						<div class="flex h-full items-center justify-center p-4">
 							{#if $player1Typing}
-								<p class="text-center text-xl text-gray-400 italic break-words max-w-full animate-pulse">
+								<p class="text-center text-2xl text-gray-400 italic break-words max-w-full animate-pulse">
 									{$player1Typing}<span class="text-neon-pink">|</span>
 								</p>
 							{:else}
@@ -108,10 +108,10 @@
 					{#if $player1Submitted}
 						<div class="flex items-center gap-2">
 							<span class="text-3xl text-neon-green">&#x2714;</span>
-							<p class="text-xl text-gray-400 italic break-words max-w-xs text-center">"{$player1Prompt}"</p>
+							<p class="text-2xl text-gray-400 italic break-words max-w-md text-center">"{$player1Prompt}"</p>
 						</div>
 					{:else if $player1Typing}
-						<p class="text-xl text-gray-400 italic break-words max-w-xs text-center animate-pulse">
+						<p class="text-2xl text-gray-400 italic break-words max-w-md text-center animate-pulse">
 							{$player1Typing}<span class="text-neon-pink">|</span>
 						</p>
 					{:else}
@@ -123,10 +123,10 @@
 					{#if $player2Submitted}
 						<div class="flex items-center gap-2">
 							<span class="text-3xl text-neon-green">&#x2714;</span>
-							<p class="text-xl text-gray-400 italic break-words max-w-xs text-center">"{$player2Prompt}"</p>
+							<p class="text-2xl text-gray-400 italic break-words max-w-md text-center">"{$player2Prompt}"</p>
 						</div>
 					{:else if $player2Typing}
-						<p class="text-xl text-gray-400 italic break-words max-w-xs text-center animate-pulse">
+						<p class="text-2xl text-gray-400 italic break-words max-w-md text-center animate-pulse">
 							{$player2Typing}<span class="text-neon-blue">|</span>
 						</p>
 					{:else}
@@ -174,7 +174,7 @@
 					{:else}
 						<div class="flex h-full flex-col items-center justify-center gap-2 p-4">
 							<span class="text-4xl text-neon-green">&#x2714;</span>
-							<p class="text-center text-xl text-gray-400 italic break-words max-w-full">"{$player1Prompt}"</p>
+							<p class="text-center text-2xl text-gray-400 italic break-words max-w-full">"{$player1Prompt}"</p>
 						</div>
 					{/if}
 				</div>
@@ -214,7 +214,7 @@
 					{:else}
 						<div class="flex h-full flex-col items-center justify-center gap-2 p-4">
 							<span class="text-4xl text-neon-green">&#x2714;</span>
-							<p class="text-center text-xl text-gray-400 italic break-words max-w-full">"{$player2Prompt}"</p>
+							<p class="text-center text-2xl text-gray-400 italic break-words max-w-full">"{$player2Prompt}"</p>
 						</div>
 					{/if}
 				</div>

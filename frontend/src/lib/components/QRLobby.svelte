@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import QRCode from 'qrcode';
-	import { gameId, joinToken, player1Connected, player2Connected, connectedPlayerCount } from '$lib/stores/gameStore';
+	import { gameId, joinToken, player1Connected, player2Connected, connectedPlayerCount, roundTimeSeconds } from '$lib/stores/gameStore';
 
 	let canvas: HTMLCanvasElement | undefined = $state();
-	let lobbyCountdown = $state(60);
+	let lobbyCountdown = $state($roundTimeSeconds);
 	let started = $state(false);
 
 	let p1Connected = $derived($player1Connected);
@@ -14,7 +14,7 @@
 	// Animated hint rotator
 	const hints = [
 		'Triff das Zielbild mit deinem Prompt',
-		'60 Sekunden pro Runde',
+		`${$roundTimeSeconds} Sekunden pro Runde`,
 		'Schwelle steigt jede Runde',
 		'Beschreibe das Bild so genau wie möglich',
 		'Je ähnlicher, desto mehr Punkte',
@@ -88,7 +88,7 @@
 		<div class="flex flex-col gap-4 text-2xl text-gray-300">
 			<p class="font-pixel text-neon-yellow">SO GEHT'S:</p>
 			<p>&#x1F3AF; Triff das Zielbild mit deinem Prompt</p>
-			<p>&#x23F1;&#xFE0F; 60 Sekunden pro Runde</p>
+			<p>&#x23F1;&#xFE0F; {$roundTimeSeconds} Sekunden pro Runde</p>
 			<p>&#x1F4C8; Schwelle steigt jede Runde</p>
 			<p>&#x1F916; KI generiert &amp; bewertet</p>
 		</div>
@@ -121,7 +121,7 @@
 	</div>
 
 	<!-- Animated hints -->
-	<div class="h-20 flex items-center justify-center">
+	<div class="h-28 mb-4 flex items-center justify-center">
 		{#key hintIndex}
 			<p class="font-pixel text-5xl text-neon-yellow animate-hint-fade">{hints[hintIndex]}</p>
 		{/key}

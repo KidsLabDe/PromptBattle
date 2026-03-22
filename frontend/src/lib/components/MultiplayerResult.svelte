@@ -58,9 +58,9 @@
 				{$currentScore.toFixed(1)}%
 			</span>
 			<p class="mt-2 text-gray-400">Mindestscore: {$threshold}%</p>
-			<p class="mt-1 text-sm text-gray-500 italic">"{$player1Prompt}"</p>
+			<p class="mt-1 text-xl text-gray-400 italic">"{$player1Prompt}"</p>
 			{#if $player1Reason}
-				<p class="mt-1 text-xs text-gray-500">{$player1Reason}</p>
+				<p class="mt-1 text-base text-gray-500">{$player1Reason}</p>
 			{/if}
 		</div>
 
@@ -116,9 +116,9 @@
 				<span class="font-pixel text-4xl {winner === 1 ? 'text-neon-green' : winner === 2 ? 'text-red-500' : 'text-neon-yellow'}">
 					{$player1Score.toFixed(1)}%
 				</span>
-				<p class="max-w-xs text-center text-sm text-gray-400 italic">"{$player1Prompt}"</p>
+				<p class="max-w-md text-center text-xl text-gray-400 italic">"{$player1Prompt}"</p>
 				{#if $player1Reason}
-					<p class="max-w-xs text-center text-xs text-gray-500">{$player1Reason}</p>
+					<p class="max-w-md text-center text-base text-gray-500">{$player1Reason}</p>
 				{/if}
 			</div>
 
@@ -132,9 +132,9 @@
 				<span class="font-pixel text-4xl {winner === 2 ? 'text-neon-green' : winner === 1 ? 'text-red-500' : 'text-neon-yellow'}">
 					{$player2Score.toFixed(1)}%
 				</span>
-				<p class="max-w-xs text-center text-sm text-gray-400 italic">"{$player2Prompt}"</p>
+				<p class="max-w-md text-center text-xl text-gray-400 italic">"{$player2Prompt}"</p>
 				{#if $player2Reason}
-					<p class="max-w-xs text-center text-xs text-gray-500">{$player2Reason}</p>
+					<p class="max-w-md text-center text-base text-gray-500">{$player2Reason}</p>
 				{/if}
 			</div>
 		</div>
