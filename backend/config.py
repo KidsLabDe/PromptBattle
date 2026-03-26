@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     threshold_step: int = 5
     max_threshold: int = 75
 
+    # Display password: if set, the main display screen requires this password to start
+    display_password: str = ""
+
     # Multiplayer auto-flow settings
     multi_result_display_seconds: int = 18
     multi_restart_delay_seconds: int = 5

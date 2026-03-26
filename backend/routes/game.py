@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 
 from backend.config import settings
 from backend.game_state import create_game, get_game
@@ -24,7 +25,22 @@ async def get_config():
         "result_display_seconds": settings.result_display_seconds,
         "round_time_seconds": settings.round_time_seconds,
         "gameover_restart_seconds": settings.gameover_restart_seconds,
+        "display_password_required": bool(settings.display_password),
     }
+
+
+class DisplayLoginRequest(BaseModel):
+    password: str
+
+
+@router.post("/display/login")
+async def display_login(req: DisplayLoginRequest):
+    """Validate display password."""
+    if not settings.display_password:
+        return {"valid": True}
+    if req.password == settings.display_password:
+        return {"valid": True}
+    raise HTTPException(403, "Falsches Passwort")
 
 
 @router.post("/game/start", response_model=StartGameResponse)

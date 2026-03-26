@@ -37,6 +37,13 @@
 	let scoresReceived = false;
 	let compareAnimDone = false;
 
+	// Display password protection
+	let displayPasswordRequired = $state(false);
+	let displayAuthenticated = $state(false);
+	let passwordInput = $state('');
+	let passwordError = $state('');
+	let passwordLoading = $state(false);
+
 	// Comparing phase: progress bar from 0 to 100
 	let compareProgress = $state(0);
 	// Score reveal: animated score growing from 0 to actual value
@@ -59,6 +66,8 @@
 			RESULT_DISPLAY_SECONDS = cfg.result_display_seconds ?? 8;
 			GAMEOVER_RESTART_SECONDS = cfg.gameover_restart_seconds ?? 5;
 			if (cfg.round_time_seconds) roundTimeSeconds.set(cfg.round_time_seconds);
+			displayPasswordRequired = cfg.display_password_required ?? false;
+			if (!displayPasswordRequired) displayAuthenticated = true;
 		}).catch(() => {});
 	}
 
@@ -168,13 +177,34 @@
 		}
 	}
 
-	// Auto-start kiosk mode on page load (once)
+	// Auto-start kiosk mode on page load (once, after authentication)
 	$effect(() => {
-		if (browser && $uiState === 'title' && !autoStarted) {
+		if (browser && $uiState === 'title' && !autoStarted && displayAuthenticated) {
 			autoStarted = true;
 			startGame('multi');
 		}
 	});
+
+	async function submitDisplayPassword() {
+		passwordError = '';
+		passwordLoading = true;
+		try {
+			const res = await fetch('/api/display/login', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ password: passwordInput }),
+			});
+			if (res.ok) {
+				displayAuthenticated = true;
+			} else {
+				passwordError = 'Falsches Passwort';
+			}
+		} catch {
+			passwordError = 'Verbindungsfehler';
+		} finally {
+			passwordLoading = false;
+		}
+	}
 
 	function handleWsMessage(msg: { type: string; data: Record<string, unknown> }) {
 		switch (msg.type) {
@@ -425,10 +455,37 @@
 
 <div class="mx-auto max-w-6xl px-4 py-4">
 	{#if state === 'title'}
-		<!-- Loading — auto-redirects to kiosk -->
-		<div class="flex min-h-[80vh] items-center justify-center">
-			<div class="h-12 w-12 animate-spin rounded-full border-4 border-neon-blue/30 border-t-neon-blue"></div>
-		</div>
+		{#if displayPasswordRequired && !displayAuthenticated}
+			<!-- Display password login -->
+			<div class="flex min-h-[80vh] items-center justify-center">
+				<form onsubmit={(e) => { e.preventDefault(); submitDisplayPassword(); }} class="flex flex-col items-center gap-6 rounded-2xl border border-gray-700 bg-bg-card p-10">
+					<h1 class="font-pixel text-4xl text-neon-green">PROMPT BATTLE</h1>
+					<p class="text-lg text-gray-400">Passwort eingeben, um das Display zu starten</p>
+					<input
+						type="password"
+						bind:value={passwordInput}
+						placeholder="Passwort"
+						class="w-72 rounded-lg border border-gray-600 bg-bg-main px-4 py-3 text-center text-xl text-white placeholder-gray-500 focus:border-neon-green focus:outline-none"
+						autofocus
+					/>
+					{#if passwordError}
+						<p class="text-red-400">{passwordError}</p>
+					{/if}
+					<button
+						type="submit"
+						disabled={passwordLoading || !passwordInput}
+						class="rounded-lg bg-neon-green px-8 py-3 text-xl font-bold text-black transition hover:brightness-110 disabled:opacity-50"
+					>
+						{passwordLoading ? 'Prüfe...' : 'Starten'}
+					</button>
+				</form>
+			</div>
+		{:else}
+			<!-- Loading — auto-redirects to kiosk -->
+			<div class="flex min-h-[80vh] items-center justify-center">
+				<div class="h-12 w-12 animate-spin rounded-full border-4 border-neon-blue/30 border-t-neon-blue"></div>
+			</div>
+		{/if}
 
 	{:else if state === 'lobby'}
 		<QRLobby onstart={startGameFromLobby} />
