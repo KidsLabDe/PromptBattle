@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     clip_raw_max: float = 0.9
 
     round_time_seconds: int = 60
+    lobby_timeout_seconds: int = 120  # How long the lobby waits before auto-starting (when player connected)
     base_threshold: int = 25
     threshold_step: int = 5
     max_threshold: int = 75

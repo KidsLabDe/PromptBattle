@@ -213,6 +213,10 @@ async def _handle_single_player_msg(
 
         if not passed:
             game.game_over()
+            await send_json(ws, "game_over", {
+                "round": game.round,
+                "history": [r.model_dump() for r in game.history],
+            })
             save_game_end(
                 game_id=game.game_id,
                 started=game.started,

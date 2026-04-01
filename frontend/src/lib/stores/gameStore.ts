@@ -59,6 +59,7 @@ export const player1RevealedScore = writable<number>(0);
 export const player2RevealedScore = writable<number>(0);
 export const revealActive = writable<boolean>(false);
 export const roundTimeSeconds = writable<number>(60);
+export const lobbyTimeoutSeconds = writable<number>(120);
 
 export const formattedTime = derived(timeRemaining, ($t) => {
 	const m = Math.floor($t / 60);

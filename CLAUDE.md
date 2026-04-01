@@ -56,15 +56,18 @@ Two WS endpoints:
 
 Connection registry in `ws.py`: `_connections: dict[game_id, dict[role, WebSocket]]`
 
-### Game Flow (Multiplayer)
+### Game Flow (Kiosk Mode)
 
-1. **Lobby**: Main screen creates game, shows QR code. Players scan → WS connect → `player_connected`
-2. **Start**: 2 players connected → `start_game` → `game_mode_set` + `round_start` broadcast
-3. **Playing**: 60s timer, players type (`typing` → `player_typing`) and submit (`submit_prompt` → `prompt_accepted`)
-4. **Generation**: Both prompts in → `_run_multi_generation()` runs parallel `asyncio.gather` → `generation_start/complete` per player
-5. **Scoring**: `compute_similarity()` per player → `multi_score_result` broadcast with winner
-6. **Result**: Frontend shows compare animation (4s) then score reveal (2.5s)
-7. **Auto-advance**: Countdown → next round with new target image
+All modes run as a kiosk — auto-start on page load, auto-advance between rounds, auto-restart after game over.
+
+1. **Lobby**: Main screen creates game, shows QR code. Players scan → WS connect → `player_connected`. Auto-starts after `PB_LOBBY_TIMEOUT_SECONDS` when 1+ player connected, or immediately when 2 players connect.
+2. **Start**: `start_game` → `game_mode_set` (single if 1 player, multi if 2) + `round_start` broadcast
+3. **Playing**: Timer runs, players type (`typing` → `player_typing`) and submit (`submit_prompt` → `prompt_accepted`)
+4. **Generation**: Prompts in → `_run_multi_generation()` runs parallel `asyncio.gather` → `generation_start/complete` per player
+5. **Comparing**: Frontend shows "BILDER WERDEN VERGLICHEN..." progress bar (both single and multiplayer)
+6. **Scoring**: `compute_similarity()` per player → `score_result` (single) or `multi_score_result` (multi) with animated score reveal
+7. **Result**: Score reveal animation, prompt display, AI reasoning (Gemini only), auto-countdown
+8. **Auto-advance**: Passed → next round; Failed → game over screen → auto-restart new game
 
 ### Image Generation Backends
 
@@ -78,10 +81,18 @@ Configured via `PB_SIMILARITY_BACKEND`:
 - `clip` — Local CLIP model, cosine similarity scaled to 0-100%
 - `gemini` — Gemini vision API scores image pair with German prompt
 
+### Deployment
+
+- `promptbattle.service` — systemd unit file for auto-start on boot (no login required)
+- Install: `sudo ln -s /path/to/promptbattle.service /etc/systemd/system/ && sudo systemctl enable promptbattle`
+- Logs: `journalctl -u promptbattle -f`
+
 ## Key Conventions
 
 - All config uses `PB_` prefixed env vars (see `backend/config.py` for all options)
+- `PB_LOBBY_TIMEOUT_SECONDS` — separate from `PB_ROUND_TIME_SECONDS` for lobby wait time
 - Frontend uses Svelte 5 runes (`$state`, `$derived`, `$effect`) — not legacy `$:` syntax
+- All modes run as kiosk: auto-start, auto-advance, auto-restart (no manual buttons on main display)
 - UI language is German throughout
 - Dark theme with neon color palette (green, pink, blue, yellow)
 - Custom pixel font: Pixelify Sans

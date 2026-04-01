@@ -14,14 +14,13 @@
 		player1Error, player2Error,
 		autoCountdown, compareCountdown,
 		player1RevealedScore, player2RevealedScore, revealActive,
-		roundTimeSeconds,
+		roundTimeSeconds, lobbyTimeoutSeconds,
 		type RoundResult, type GameMode as GM
 	} from '$lib/stores/gameStore';
 	import Timer from '$lib/components/Timer.svelte';
 	import PromptInput from '$lib/components/PromptInput.svelte';
 	import TargetImage from '$lib/components/TargetImage.svelte';
 	import GeneratedImage from '$lib/components/GeneratedImage.svelte';
-	import ScoreDisplay from '$lib/components/ScoreDisplay.svelte';
 	import RoundInfo from '$lib/components/RoundInfo.svelte';
 	import QRLobby from '$lib/components/QRLobby.svelte';
 	import MultiplayerGame from '$lib/components/MultiplayerGame.svelte';
@@ -36,6 +35,9 @@
 	let autoStarted = false;
 	let scoresReceived = false;
 	let compareAnimDone = false;
+	let singlePlayerPrompt = $state('');
+	let singleResultCountdown = $state(0);
+	let singleResultCountdownTimer: ReturnType<typeof setInterval> | null = null;
 
 	// Display password protection
 	let displayPasswordRequired = $state(false);
@@ -66,6 +68,7 @@
 			RESULT_DISPLAY_SECONDS = cfg.result_display_seconds ?? 8;
 			GAMEOVER_RESTART_SECONDS = cfg.gameover_restart_seconds ?? 5;
 			if (cfg.round_time_seconds) roundTimeSeconds.set(cfg.round_time_seconds);
+			if (cfg.lobby_timeout_seconds) lobbyTimeoutSeconds.set(cfg.lobby_timeout_seconds);
 			displayPasswordRequired = cfg.display_password_required ?? false;
 			if (!displayPasswordRequired) displayAuthenticated = true;
 		}).catch(() => {});
@@ -124,6 +127,18 @@
 		}, stepMs);
 	}
 
+	function startSingleResultCountdown() {
+		if (singleResultCountdownTimer) clearInterval(singleResultCountdownTimer);
+		singleResultCountdown = Math.ceil(RESULT_DISPLAY_SECONDS);
+		singleResultCountdownTimer = setInterval(() => {
+			singleResultCountdown--;
+			if (singleResultCountdown <= 0) {
+				clearInterval(singleResultCountdownTimer!);
+				singleResultCountdownTimer = null;
+			}
+		}, 1000);
+	}
+
 	function startScoreReveal() {
 		uiState.set('result');
 		revealedScore = 0;
@@ -157,8 +172,9 @@
 				}
 			}, stepMs);
 		} else {
-			// Single player
+			// Single player (both traditional and phone-controlled)
 			const targetScore = $currentScore;
+			const passed = $currentPassed;
 			const stepMs = 30;
 			const steps = SCORE_REVEAL_MS / stepMs;
 			let step = 0;
@@ -169,8 +185,21 @@
 					clearInterval(revealTimer);
 					revealedScore = targetScore;
 					scoreRevealed = true;
-					if (pendingGameOver) {
-						resultDisplayTimer = setTimeout(() => playAgain(), RESULT_DISPLAY_SECONDS * 1000);
+					if ($isPhoneControl) {
+						// Phone-controlled: backend handles auto-advance for passed rounds
+						// For game over (not passed), restart via frontend
+						if (pendingGameOver && !resultDisplayTimer) {
+							resultDisplayTimer = setTimeout(() => playAgain(), RESULT_DISPLAY_SECONDS * 1000);
+						}
+					} else {
+						// Traditional single-player: frontend handles auto-advance
+						if (pendingGameOver) {
+							startSingleResultCountdown();
+							resultDisplayTimer = setTimeout(() => playAgain(), RESULT_DISPLAY_SECONDS * 1000);
+						} else if (passed) {
+							startSingleResultCountdown();
+							resultDisplayTimer = setTimeout(() => nextRound(), RESULT_DISPLAY_SECONDS * 1000);
+						}
 					}
 				}
 			}, stepMs);
@@ -246,6 +275,10 @@
 				} else {
 					generatedImage.set(msg.data.image as string);
 					if (msg.data.error) generationError.set(msg.data.error as string);
+					// Single-player traditional: show images then compare (like multiplayer)
+					if (!$isPhoneControl && $gameMode === 'single') {
+						startImageDisplayPhase();
+					}
 				}
 				break;
 			case 'score_result':
@@ -254,7 +287,6 @@
 				player1Reason.set((msg.data.reason as string) || '');
 				if ($isPhoneControl) {
 					player1Score.set(msg.data.score as number);
-					player1Prompt.set('');
 				}
 				scoresReceived = true;
 				if ($uiState === 'comparing' && compareAnimDone) {
@@ -328,7 +360,13 @@
 				break;
 			case 'time_up':
 				if ($gameMode === 'single' && !$isPhoneControl) {
-					uiState.set('gameover');
+					const st = $uiState;
+					if (st === 'generating' || st === 'comparing' || st === 'result') {
+						// Don't interrupt generation/scoring flow
+						pendingGameOver = true;
+					} else {
+						uiState.set('gameover');
+					}
 				}
 				break;
 			case 'auto_restart':
@@ -341,15 +379,16 @@
 				break;
 			case 'game_over':
 				history.set((msg.data.history as RoundResult[]) || []);
-				// Buffer game_over during comparing/generating/result — don't interrupt the display
-				const currentState = $uiState;
-				if (currentState === 'comparing' || currentState === 'generating') {
-					pendingGameOver = true;
-				} else if (currentState === 'result') {
-					// Already showing result — restart after display time
-					resultDisplayTimer = setTimeout(() => playAgain(), RESULT_DISPLAY_SECONDS * 1000);
-				} else {
-					// Not in score display — handle normally
+				pendingGameOver = true;
+				// Always schedule a restart — long enough for animations to finish
+				if (!resultDisplayTimer) {
+					const delayMs = ($uiState === 'comparing' || $uiState === 'generating')
+						? (COMPARE_MS + SCORE_REVEAL_MS + RESULT_DISPLAY_SECONDS * 1000 + 2000)
+						: RESULT_DISPLAY_SECONDS * 1000;
+					resultDisplayTimer = setTimeout(() => playAgain(), delayMs);
+				}
+				// If not in an animation phase, go to gameover screen immediately
+				if ($uiState !== 'comparing' && $uiState !== 'generating' && $uiState !== 'result') {
 					uiState.set('gameover');
 				}
 				break;
@@ -408,6 +447,7 @@
 	}
 
 	function submitPrompt(prompt: string) {
+		singlePlayerPrompt = prompt;
 		uiState.set('generating');
 		generationStep.set(0);
 		generatedImage.set('');
@@ -424,9 +464,9 @@
 		startGame('multi');
 	}
 
-	// Kiosk auto-restart: when gameover state is reached (only for cases not handled by buffering)
+	// Kiosk auto-restart: when gameover state is reached (all modes)
 	$effect(() => {
-		if ($uiState === 'gameover' && ($isPhoneControl || $gameMode === 'multi')) {
+		if ($uiState === 'gameover') {
 			const totalSeconds = Math.ceil(GAMEOVER_RESTART_SECONDS);
 			gameoverCountdown = totalSeconds;
 			const countdownTimer = setInterval(() => {
@@ -446,6 +486,7 @@
 		ws?.close();
 		if (compareTimer) clearInterval(compareTimer);
 		if (resultDisplayTimer) clearTimeout(resultDisplayTimer);
+		if (singleResultCountdownTimer) clearInterval(singleResultCountdownTimer);
 	});
 
 	let state = $derived($uiState);
@@ -549,6 +590,9 @@
 						{$currentScore.toFixed(1)}%
 					</span>
 					<p class="text-gray-400">Mindestscore: {$threshold}%</p>
+					{#if $player1Prompt}
+						<p class="max-w-lg text-center text-lg italic text-gray-300">„{$player1Prompt}"</p>
+					{/if}
 					{#if $player1Reason}
 						<p class="max-w-lg text-center text-base text-gray-500">{$player1Reason}</p>
 					{/if}
@@ -596,50 +640,93 @@
 		{/if}
 		</div>
 
-	{:else if state === 'playing' || state === 'generating'}
+	{:else if state === 'playing' || state === 'generating' || state === 'comparing' || state === 'result'}
 		<!-- Einzelspieler -->
 		<div class="flex flex-col gap-6">
 			<div class="flex items-center justify-between">
 				<RoundInfo />
-				<Timer />
+				{#if state === 'playing' || state === 'generating'}
+					<Timer />
+				{/if}
 			</div>
 			<div class="grid grid-cols-1 gap-8 md:grid-cols-2">
 				<TargetImage />
 				<GeneratedImage />
 			</div>
-			<PromptInput onsubmit={submitPrompt} />
-		</div>
 
-	{:else if state === 'result'}
-		<!-- Einzelspieler Ergebnis -->
-		<div class="flex flex-col gap-6">
-			<RoundInfo />
-			<div class="grid grid-cols-1 gap-8 md:grid-cols-2">
-				<TargetImage />
-				<GeneratedImage />
-			</div>
-			<ScoreDisplay />
-			{#if $currentPassed}
-				<div class="flex justify-center">
-					<button
-						onclick={nextRound}
-						class="cursor-pointer rounded-xl bg-neon-green px-10 py-3 text-lg font-bold
-							text-black transition-all duration-200
-							hover:scale-105 hover:shadow-lg hover:shadow-neon-green/30"
-					>
-						Nächste Runde
-					</button>
+			{#if state === 'playing'}
+				<PromptInput onsubmit={submitPrompt} />
+			{/if}
+
+			{#if state === 'generating' && imageDisplayCountdown > 0}
+				<div class="flex flex-col items-center py-3">
+					<p class="text-lg text-gray-400">
+						Vergleich startet in <span class="font-bold text-neon-yellow">{imageDisplayCountdown}</span>
+					</p>
 				</div>
-			{:else}
-				<div class="flex justify-center">
-					<button
-						onclick={playAgain}
-						class="cursor-pointer rounded-xl bg-neon-pink px-10 py-3 text-lg font-bold
-							text-white transition-all duration-200
-							hover:scale-105 hover:shadow-lg hover:shadow-neon-pink/30"
-					>
-						Nochmal spielen
-					</button>
+			{/if}
+
+			{#if state === 'comparing'}
+				<div class="flex flex-col items-center gap-3 py-3">
+					<h2 class="font-pixel text-2xl text-neon-yellow animate-pulse-glow">
+						BILDER WERDEN VERGLICHEN...
+					</h2>
+					<div class="w-full max-w-lg mx-auto">
+						<div class="h-4 w-full overflow-hidden rounded-full bg-bg-card border border-gray-700">
+							<div
+								class="h-full rounded-full bg-neon-yellow transition-all duration-100"
+								style="width: {compareProgress}%"
+							></div>
+						</div>
+					</div>
+				</div>
+			{/if}
+
+			{#if state === 'result' && !scoreRevealed}
+				<div class="flex flex-col items-center gap-3 py-3">
+					<h2 class="font-pixel text-2xl text-neon-green">ERGEBNIS</h2>
+					<div class="w-full max-w-lg mx-auto">
+						<div class="h-6 w-full overflow-hidden rounded-full bg-bg-card border border-gray-700">
+							<div
+								class="h-full rounded-full transition-all duration-75"
+								class:bg-neon-green={$currentPassed}
+								class:bg-red-500={!$currentPassed}
+								style="width: {revealedScore}%"
+							></div>
+						</div>
+						<p class="mt-2 text-center font-pixel text-3xl" class:text-neon-green={$currentPassed} class:text-red-500={!$currentPassed}>
+							{revealedScore.toFixed(1)}%
+						</p>
+					</div>
+				</div>
+			{/if}
+
+			{#if state === 'result' && scoreRevealed}
+				<div class="flex flex-col items-center gap-3 py-3">
+					{#if $currentPassed}
+						<h2 class="font-pixel text-4xl text-neon-green">GESCHAFFT!</h2>
+					{:else}
+						<h2 class="font-pixel text-4xl text-red-500">NICHT BESTANDEN</h2>
+					{/if}
+					<span class="font-pixel text-5xl" class:text-neon-green={$currentPassed} class:text-red-500={!$currentPassed}>
+						{$currentScore.toFixed(1)}%
+					</span>
+					<p class="text-gray-400">Mindestscore: {$threshold}%</p>
+					{#if singlePlayerPrompt}
+						<p class="max-w-lg text-center text-lg italic text-gray-300">„{singlePlayerPrompt}"</p>
+					{/if}
+					{#if $player1Reason}
+						<p class="max-w-lg text-center text-base text-gray-500">{$player1Reason}</p>
+					{/if}
+					{#if singleResultCountdown > 0}
+						<p class="text-lg text-gray-400">
+							{#if $currentPassed}
+								Nächste Runde in <span class="font-bold text-neon-green">{singleResultCountdown}</span>
+							{:else}
+								Neues Spiel in <span class="font-bold text-neon-green">{singleResultCountdown}</span>
+							{/if}
+						</p>
+					{/if}
 				</div>
 			{/if}
 		</div>
@@ -660,13 +747,7 @@
 				</p>
 			{/if}
 
-			{#if $isPhoneControl || mode === 'multi'}
-				<p class="text-lg text-gray-400">
-					Neues Spiel in <span class="font-bold text-neon-green">{gameoverCountdown}</span>
-				</p>
-			{/if}
-
-			{#if !$isPhoneControl && mode === 'single' && roundHistory.length > 0}
+			{#if roundHistory.length > 0}
 				<div class="w-full max-w-2xl">
 					<h3 class="mb-4 text-lg font-semibold text-gray-300">Rundenverlauf</h3>
 					<div class="flex flex-col gap-3">
@@ -692,16 +773,9 @@
 				</div>
 			{/if}
 
-			{#if !$isPhoneControl && mode === 'single'}
-				<button
-					onclick={playAgain}
-					class="font-pixel mt-4 cursor-pointer rounded-2xl bg-neon-pink px-12 py-4 text-xl
-						text-white transition-all duration-200
-						hover:scale-105 hover:shadow-xl hover:shadow-neon-pink/30"
-				>
-					NOCHMAL SPIELEN
-				</button>
-			{/if}
+			<p class="text-lg text-gray-400">
+				Neues Spiel in <span class="font-bold text-neon-green">{gameoverCountdown}</span>
+			</p>
 		</div>
 	{/if}
 </div>

@@ -24,6 +24,7 @@ async def get_config():
         "score_reveal_seconds": settings.score_reveal_seconds,
         "result_display_seconds": settings.result_display_seconds,
         "round_time_seconds": settings.round_time_seconds,
+        "lobby_timeout_seconds": settings.lobby_timeout_seconds,
         "gameover_restart_seconds": settings.gameover_restart_seconds,
         "display_password_required": bool(settings.display_password),
     }

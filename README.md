@@ -31,8 +31,32 @@ cd frontend && npm install && cd ..
 ### Starten
 
 ```bash
-python run.py
+# Manuell
+uv run run.py
+
+# Als systemd-Service (Autostart beim Booten)
+sudo ln -s $(pwd)/promptbattle.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now promptbattle
+
+# Logs
+journalctl -u promptbattle -f
 ```
+
+### Konfiguration
+
+Alle Einstellungen über `.env` mit `PB_`-Prefix:
+
+| Variable | Beschreibung | Default |
+|---|---|---|
+| `PB_IMAGE_BACKEND` | Bildgenerierung: `local` oder `gemini` | `local` |
+| `PB_SIMILARITY_BACKEND` | Bewertung: `clip` oder `gemini` | `clip` |
+| `PB_GEMINI_API_KEY` | Google Gemini API Key (für gemini-Backends) | — |
+| `PB_ROUND_TIME_SECONDS` | Sekunden pro Runde | `60` |
+| `PB_LOBBY_TIMEOUT_SECONDS` | Sekunden bis Auto-Start in Lobby | `120` |
+| `PB_BASE_THRESHOLD` | Start-Schwellenwert (%) | `25` |
+
+Alle Optionen: siehe `backend/config.py`
 
 ## Credits
 

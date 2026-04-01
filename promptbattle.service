@@ -1,0 +1,24 @@
+[Unit]
+Description=Prompt Battle – AI Image Generation Game
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kingbbq
+WorkingDirectory=/home/kingbbq/src/PromptBattle
+ExecStart=/usr/bin/uv run run.py
+Restart=on-failure
+RestartSec=5
+EnvironmentFile=/home/kingbbq/src/PromptBattle/.env
+
+# GPU access
+SupplementaryGroups=video render
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=promptbattle
+
+[Install]
+WantedBy=multi-user.target
