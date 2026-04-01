@@ -12,21 +12,28 @@
 	let playerCount = $derived($connectedPlayerCount);
 
 	// Animated hint rotator
-	const baseHints = [
+	const hints = [
 		'Triff das Zielbild mit deinem Prompt',
 		`${$roundTimeSeconds} Sekunden pro Runde`,
 		'Schwelle steigt jede Runde',
 		'Beschreibe das Bild so genau wie möglich',
 		'Je ähnlicher, desto mehr Punkte',
 	];
-	let hints = $derived(
-		playerCount === 1
-			? [...baseHints, '2. Spieler? QR-Code scannen!']
-			: baseHints
-	);
 	let hintIndex = $state(0);
+	let showMultiHint = $state(false);
 	let hintTimer = setInterval(() => {
-		hintIndex = (hintIndex + 1) % hints.length;
+		if (playerCount === 1) {
+			// Alternate: normal hint → multiplayer hint → normal hint → ...
+			if (showMultiHint) {
+				showMultiHint = false;
+				hintIndex = (hintIndex + 1) % hints.length;
+			} else {
+				showMultiHint = true;
+			}
+		} else {
+			showMultiHint = false;
+			hintIndex = (hintIndex + 1) % hints.length;
+		}
 	}, 4000);
 
 	interface Props {
@@ -128,8 +135,10 @@
 
 	<!-- Animated hints -->
 	<div class="flex items-center justify-center">
-		{#key hintIndex}
-			<p class="font-pixel text-4xl text-neon-yellow animate-hint-fade">{hints[hintIndex]}</p>
+		{#key showMultiHint ? 'multi' : hintIndex}
+			<p class="font-pixel text-4xl text-neon-yellow animate-hint-fade">
+				{showMultiHint ? '2. Spieler? QR-Code scannen!' : hints[hintIndex]}
+			</p>
 		{/key}
 	</div>
 
@@ -146,7 +155,7 @@
 			</button>
 			<p class="font-pixel text-lg text-gray-500">
 				{#if playerCount === 1}
-					1 Spieler verbunden — QR scannen für Multiplayer
+					1 Spieler verbunden
 				{:else}
 					2 Spieler — Mehrspieler
 				{/if}
