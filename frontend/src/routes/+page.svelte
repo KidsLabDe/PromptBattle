@@ -61,7 +61,7 @@
 
 	// Fetch timing config from backend
 	if (browser) {
-		fetch('/api/config').then(r => r.json()).then(cfg => {
+		fetch('/api/config').then(r => r.json()).then(async cfg => {
 			IMAGE_DISPLAY_MS = (cfg.image_display_seconds ?? 3) * 1000;
 			COMPARE_MS = (cfg.compare_bar_seconds ?? 3) * 1000;
 			SCORE_REVEAL_MS = (cfg.score_reveal_seconds ?? 2.5) * 1000;
@@ -70,7 +70,20 @@
 			if (cfg.round_time_seconds) roundTimeSeconds.set(cfg.round_time_seconds);
 			if (cfg.lobby_timeout_seconds) lobbyTimeoutSeconds.set(cfg.lobby_timeout_seconds);
 			displayPasswordRequired = cfg.display_password_required ?? false;
-			if (!displayPasswordRequired) displayAuthenticated = true;
+			if (!displayPasswordRequired) {
+				displayAuthenticated = true;
+			} else {
+				// Auto-login wenn Passwort per URL-Parameter übergeben wird (?pw=...)
+				const urlPw = new URLSearchParams(window.location.search).get('pw');
+				if (urlPw) {
+					const res = await fetch('/api/display/login', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ password: urlPw }),
+					});
+					if (res.ok) displayAuthenticated = true;
+				}
+			}
 		}).catch(() => {});
 	}
 
