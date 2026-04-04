@@ -50,6 +50,10 @@ class Settings(BaseSettings):
     multi_result_display_seconds: int = 18
     multi_restart_delay_seconds: int = 5
 
+    # Telegram bot settings
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
+
     # Frontend animation timings (seconds)
     image_display_seconds: float = 3.0    # Pause to show generated images before comparing
     compare_bar_seconds: float = 3.0      # "Bilder werden verglichen" bar duration

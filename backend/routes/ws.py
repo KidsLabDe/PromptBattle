@@ -13,6 +13,7 @@ from backend.services.history import save_round_single, save_round_multi, save_g
 from backend.services.image_generator import generate_image, image_to_base64
 from backend.services.similarity import compute_similarity
 from backend.services.target_images import pick_random_target, target_image_path
+from backend.services.telegram import send_round_single as tg_round_single, send_round_multi as tg_round_multi
 
 router = APIRouter()
 
@@ -210,6 +211,16 @@ async def _handle_single_player_msg(
             scoring_time=scoring_time,
             error=error_msg,
         )
+
+        asyncio.create_task(tg_round_single(
+            target_image_name=game.target_image,
+            prompt=prompt,
+            score=round(score, 1),
+            threshold=game.threshold,
+            passed=passed,
+            generated_b64=gen_b64,
+            reason=reason,
+        ))
 
         if not passed:
             game.game_over()
@@ -552,6 +563,16 @@ async def _run_multi_generation_inner(game: GameState, game_id: str, loop) -> No
             scoring_time=results[1].get("scoring_time"),
         )
 
+        asyncio.create_task(tg_round_single(
+            target_image_name=game.target_image,
+            prompt=results[1]["prompt"],
+            score=score,
+            threshold=game.threshold,
+            passed=passed,
+            generated_b64=results[1]["generated_image"],
+            reason=results[1].get("reason", ""),
+        ))
+
         if not passed:
             game.game_over()
             await broadcast(game_id, "game_over", {
@@ -610,6 +631,16 @@ async def _run_multi_generation_inner(game: GameState, game_id: str, loop) -> No
             player2=results[2],
             winner=winner,
         )
+
+        asyncio.create_task(tg_round_multi(
+            target_image_name=game.target_image,
+            player1=results[1],
+            player2=results[2],
+            winner=winner,
+            round_num=game.round,
+            player1_wins=game.player1_wins,
+            player2_wins=game.player2_wins,
+        ))
 
         asyncio.create_task(_auto_advance_after_result(game))
 
