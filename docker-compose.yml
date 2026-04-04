@@ -26,9 +26,15 @@ services:
       - "traefik.http.middlewares.promptbattle-redirect.redirectscheme.permanent=true"
     env_file:
       - .env.production
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
     volumes:
       - ./generated_history:/app/generated_history
       - ./target_images:/app/target_images
+      - ./logs:/app/logs
     networks:
       - proxy
       - default
