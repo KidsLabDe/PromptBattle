@@ -1,11 +1,14 @@
 import asyncio
 import io
 import json
+import logging
 import re
 from functools import partial
 from PIL import Image
 
 from backend.config import settings
+
+logger = logging.getLogger(__name__)
 
 # ── CLIP (local) ─────────────────────────────────────────────
 _model = None
@@ -104,6 +107,19 @@ Antworte NUR mit einem JSON-Objekt in diesem Format:
             types.Part.from_bytes(data=img_b_bytes, mime_type="image/jpeg"),
         ],
     )
+
+    try:
+        usage = getattr(response, "usage_metadata", None)
+        if usage:
+            logger.info(
+                "Gemini usage [similarity] model=%s prompt_tokens=%s candidates_tokens=%s total_tokens=%s",
+                settings.similarity_gemini_model,
+                getattr(usage, "prompt_token_count", "?"),
+                getattr(usage, "candidates_token_count", "?"),
+                getattr(usage, "total_token_count", "?"),
+            )
+    except Exception:
+        pass
 
     text = response.text.strip()
     # Extract JSON from response (may be wrapped in markdown code block)

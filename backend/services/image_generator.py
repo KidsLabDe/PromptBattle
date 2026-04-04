@@ -1,11 +1,14 @@
 import asyncio
 import io
 import base64
+import logging
 from functools import partial
 
 from PIL import Image
 
 from backend.config import settings
+
+logger = logging.getLogger(__name__)
 
 _pipe = None
 _gemini_client = None
@@ -120,6 +123,8 @@ def _generate_gemini_sync(prompt: str) -> Image.Image:
                 response_modalities=["IMAGE", "TEXT"],
             ),
         )
+        _log_usage("image_generation", model, response)
+
         if response.candidates:
             candidate = response.candidates[0]
             if candidate.content and candidate.content.parts:
@@ -152,6 +157,22 @@ def _generate_gemini_sync(prompt: str) -> Image.Image:
         msg = f"Gemini returned no image (reason: {reason}) for prompt: {prompt[:80]}"
         print(f"Warning: {msg}")
         raise RuntimeError(msg)
+
+
+def _log_usage(task: str, model: str, response) -> None:
+    """Log token usage from a Gemini response if available."""
+    try:
+        usage = getattr(response, "usage_metadata", None)
+        if usage:
+            logger.info(
+                "Gemini usage [%s] model=%s prompt_tokens=%s candidates_tokens=%s total_tokens=%s",
+                task, model,
+                getattr(usage, "prompt_token_count", "?"),
+                getattr(usage, "candidates_token_count", "?"),
+                getattr(usage, "total_token_count", "?"),
+            )
+    except Exception:
+        pass
 
 
 # ── Public API ───────────────────────────────────────────────
